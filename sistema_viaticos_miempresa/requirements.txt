@@ -1,0 +1,15 @@
+# La interfaz gráfica (todas las ventanas del sistema).
+# Es la biblioteca base: sin esto el programa no abre.
+PySide6>=6.5
+
+# El calendario visual es propio (qt_comunes.py), no requiere librerías externas.
+
+# Necesario para importar la lista de empleados y de clientes desde Excel.
+openpyxl>=3.1
+
+# Conector de PostgreSQL: necesario SOLO si se trabaja con la base central
+# del servidor (config.json con "motor": "postgres"). En el .exe ya va incluido.
+psycopg2-binary>=2.9
+
+# Herramienta para generar el .exe de pruebas (se instala aparte):
+#   pip install pyinstaller

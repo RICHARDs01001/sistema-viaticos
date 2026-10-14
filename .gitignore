@@ -1,0 +1,56 @@
+# =====================================================================
+#  Sistema de Viáticos Miempresa — .gitignore
+#  Lo que se ignora es, sobre todo, DATOS (de la empresa y de cada PC).
+# =====================================================================
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.venv/
+venv/
+env/
+
+# --- PyInstaller: el .exe y sus temporales no se versionan ---
+build/
+dist/
+*.manifest
+
+# --- Configuración de cada computadora (IP, puerto, clave, zoom) ---
+config.json
+configuracion.py.bak
+
+# --- Datos de la empresa: NUNCA al repositorio ---
+data/
+*.db
+*.sqlite
+*.sqlite3
+*.sql
+excel/
+respaldos_base/
+
+# --- Informes y PDF armados con los datos reales (viáticos, facturas, capturas) ---
+VIATICOS_*.md
+PDF_VIATICOS_*/
+capturas/
+*.pdf
+
+# --- Excels de trabajo y bases de prueba (viven fuera del programa) ---
+herramientas/excels_de_trabajo/
+herramientas/prueba_excel/
+
+# --- Salidas y temporales ---
+autodiagnostico.txt
+*.log
+_*.txt
+*_resultado.txt
+herramientas/tiempos_de_viaje.txt
+
+# --- Editores / sistema ---
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+~$*
+*.tmp
