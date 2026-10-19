@@ -426,6 +426,16 @@ if ($AlDia -and -not $Forzar -and $TieneExe) {
     Decir "El sistema ya está al día (versión $VersionLocal). No hay nada que bajar." "Green"
     Decir ""
     Guardar-Ruta $App
+
+    # Aunque no haya nada que bajar, se dejan los accesos directos en su sitio: así
+    # una PC que ya está al día recupera el icono del escritorio si le faltaba.
+    Decir "Revisando los accesos directos ..."
+    $r = Reparar-Accesos $ExeLocal
+    if (($r.Cambiados + $r.Creados + $r.Borrados) -gt 0) {
+        Decir ("  Accesos directos: {0} re-apuntado(s), {1} creado(s)/actualizado(s), {2} repetido(s) borrado(s)." -f $r.Cambiados, $r.Creados, $r.Borrados) "DarkGray"
+    } else {
+        Decir "  Los accesos directos ya estaban bien." "DarkGray"
+    }
     if (-not $SinPausa) { Read-Host "ENTER para cerrar" | Out-Null }
     exit 0
 }
