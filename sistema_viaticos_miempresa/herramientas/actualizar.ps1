@@ -154,9 +154,11 @@ function Reparar-Accesos([string]$exe, [switch]$Simular) {
         $destino = $a.Destino
         $mismoNombre = ((Split-Path -Leaf $destino) -ieq $NombreExe)
         $apuntaAqui = ((Split-Path -Parent $destino) -ieq $carpeta)
-        $roto = -not (Test-Path -LiteralPath $destino)
+        # Solo se tocan los accesos del sistema: el que apunta al ejecutable, el que
+        # está en la carpeta del programa o el que se llama "Sistema de Viáticos".
+        # Un acceso roto de otro programa (Office, VLC, etc.) NO se toca.
         $seLlamaViaticos = ($a.Nombre -match "(?i)vi[aá]tic")
-        if (-not ($mismoNombre -or $apuntaAqui -or $roto -or $seLlamaViaticos)) { continue }
+        if (-not ($mismoNombre -or $apuntaAqui -or $seLlamaViaticos)) { continue }
 
         if ($Simular) {
             Decir ("  (-Simular) se habría re-apuntado: {0}" -f $a.Archivo) "Yellow"

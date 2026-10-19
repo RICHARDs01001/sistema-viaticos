@@ -17,8 +17,9 @@ rem         ACTUALIZAR_DESDE_GITHUB.bat "D:\Viaticos"
 rem         ACTUALIZAR_DESDE_GITHUB.bat https://github.com/usuario/repositorio
 rem
 rem  Puede estar dentro de la carpeta del programa o en cualquier otra parte
-rem  (escritorio, USB, carpeta compartida): si falta herramientas\actualizar.ps1
-rem  lo baja solo de GitHub.
+rem  (escritorio, USB, carpeta compartida): siempre baja la ultima version de
+rem  herramientas\actualizar.ps1 de GitHub; si no hay Internet usa la que ya
+rem  esta en esta PC.
 rem =====================================================================
 chcp 65001 > nul
 setlocal EnableExtensions
@@ -48,18 +49,21 @@ echo ============================================================
 echo.
 
 set "PS1=%AQUI%herramientas\actualizar.ps1"
-if not exist "%PS1%" (
-  echo  No esta herramientas\actualizar.ps1: lo bajo de GitHub ...
-  rem  la ruta va escrita a mano: dentro de este bloque la variable PS1
-  rem  todavia vale la de arriba y el archivo se bajaria a otro sitio
-  set "PS1=%TEMP%\actualizar_viaticos.ps1"
-  powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/RICHARDs01001/sistema-viaticos/main/sistema_viaticos_miempresa/herramientas/actualizar.ps1' -OutFile '%TEMP%\actualizar_viaticos.ps1' } catch { exit 1 }"
-  if errorlevel 1 (
+rem --- Se baja SIEMPRE la ultima version del actualizador: asi una PC con ---
+rem --- un actualizador viejo no repite fallos que ya se corrigieron.     ---
+echo  Bajando el actualizador de GitHub ...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/RICHARDs01001/sistema-viaticos/main/sistema_viaticos_miempresa/herramientas/actualizar.ps1' -OutFile '%TEMP%\actualizar_viaticos.ps1' } catch { exit 1 }"
+if errorlevel 1 (
+  if exist "%PS1%" (
+    echo  Sin conexion: uso el actualizador que ya esta en esta PC.
+  ) else (
     echo.
     echo *** No pude bajar el actualizador. Revise la conexion a Internet. ***
     pause
     exit /b 1
   )
+) else (
+  set "PS1=%TEMP%\actualizar_viaticos.ps1"
 )
 
 set "ARGS=-NoProfile -ExecutionPolicy Bypass -File "%PS1%""
