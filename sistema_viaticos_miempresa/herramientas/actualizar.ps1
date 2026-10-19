@@ -166,13 +166,13 @@ function Reparar-Accesos([string]$exe, [switch]$Simular) {
     # --- 1) los accesos del sistema se re-apuntan al ejecutable nuevo ----------
     foreach ($a in $accesos) {
         $destino = $a.Destino
-        $mismoNombre = ((Split-Path -Leaf $destino) -ieq $NombreExe)
         $apuntaAqui = ((Split-Path -Parent $destino) -ieq $carpeta)
         # Solo se tocan los accesos del sistema: el que apunta al ejecutable, el que
         # está en la carpeta del programa o el que se llama "Sistema de Viáticos".
-        # Un acceso roto de otro programa (Office, VLC, etc.) NO se toca.
+        # Un acceso de otro programa NO se toca, ni siquiera si alguna vez quedó
+        # apuntando a nuestro ejecutable (así no se "adoptan" accesos ajenos).
         $seLlamaViaticos = ($a.Nombre -match "(?i)vi.{1,4}tic")
-        if (-not ($mismoNombre -or $apuntaAqui -or $seLlamaViaticos)) { continue }
+        if (-not ($apuntaAqui -or $seLlamaViaticos)) { continue }
         if ($destino -ieq $exe) { continue }   # ya apunta al ejecutable nuevo
 
         if ($Simular) {
@@ -282,19 +282,42 @@ function Buscar-Instalacion {
         if ($d -and (Test-Instalacion $d)) { return $d }
     }
 
+    # Dónde puede estar: primero las carpetas propias (rápidas) y con más niveles,
+    # después la raíz de los discos (más lenta) con dos niveles.
     $bases = @(
-        [Environment]::GetFolderPath("Desktop"),
-        [Environment]::GetFolderPath("MyDocuments"),
-        (Join-Path $env:USERPROFILE "Downloads"),
-        (Join-Path $env:PUBLIC "Desktop"),
-        "C:\",
-        "D:\"
-    ) | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -Unique
+        [pscustomobject]@{ Ruta = [Environment]::GetFolderPath("Desktop");     Prof = 3 },
+        [pscustomobject]@{ Ruta = [Environment]::GetFolderPath("MyDocuments"); Prof = 3 },
+        [pscustomobject]@{ Ruta = (Join-Path $env:USERPROFILE "Downloads");    Prof = 3 },
+        [pscustomobject]@{ Ruta = (Join-Path $env:PUBLIC "Desktop");           Prof = 3 },
+        [pscustomobject]@{ Ruta = "C:\";                                       Prof = 2 },
+        [pscustomobject]@{ Ruta = "D:\";                                       Prof = 2 }
+    ) | Where-Object { $_.Ruta -and (Test-Path -LiteralPath $_.Ruta) } |
+        Select-Object -Unique Ruta, Prof
 
+    # 1) por el nombre del ejecutable (es el caso normal: todas las PC usan el mismo)
     foreach ($b in $bases) {
-        $enc = Get-ChildItem -LiteralPath $b -Filter $NombreExe -File -Recurse -Depth 2 -ErrorAction SilentlyContinue |
+        $enc = Get-ChildItem -LiteralPath $b.Ruta -Filter $NombreExe -File -Recurse -Depth $b.Prof -ErrorAction SilentlyContinue |
                Select-Object -First 1
         if ($enc) { return (Split-Path -Parent $enc.FullName) }
+    }
+
+    # 1-bis) si el ejecutable no está (o se perdió), por el código: main_qt.py
+    foreach ($b in $bases) {
+        $enc = Get-ChildItem -LiteralPath $b.Ruta -Filter "main_qt.py" -File -Recurse -Depth $b.Prof -ErrorAction SilentlyContinue |
+               Select-Object -First 1
+        if ($enc) { return (Split-Path -Parent $enc.FullName) }
+    }
+
+    # 2) si alguien renombró el ejecutable: cualquier *.exe con "viat" en el nombre,
+    #    pero solo si la carpeta parece una instalación (tiene data\ y version.txt).
+    foreach ($b in $bases) {
+        $candidatos = @(Get-ChildItem -LiteralPath $b.Ruta -Filter "*viat*.exe" -File -Recurse -Depth $b.Prof -ErrorAction SilentlyContinue |
+                        Select-Object -First 5)
+        foreach ($enc in $candidatos) {
+            $d = Split-Path -Parent $enc.FullName
+            if ((Test-Path -LiteralPath (Join-Path $d "version.txt")) -and
+                (Test-Path -LiteralPath (Join-Path $d "data"))) { return $d }
+        }
     }
     return ""
 }
@@ -342,12 +365,16 @@ $App = "$App".Trim().Trim('"').TrimEnd('\')
 if (-not $App) { $App = Buscar-Instalacion }
 if (-not $App -and -not $Simular -and -not $SinPausa) {
     Decir ""
-    Decir "No encontré la carpeta del programa." "Yellow"
-    Decir "Escriba la ruta donde está el programa (ENTER para cancelar):" "Yellow"
+    Decir "No encontré el Sistema de Viáticos en esta computadora." "Yellow"
+    Decir "Si el programa ya se usa aquí, avise al encargado antes de seguir." "Yellow"
+    Decir ""
+    Decir "Si sabe en qué carpeta está, escríbala y pulse ENTER (o solo ENTER para salir):"
     $respuesta = Read-Host
     if ($respuesta) { $App = $respuesta.Trim().Trim('"').TrimEnd('\') }
 }
-if (-not $App) { Fallar "No se indicó la carpeta del programa. Use -App ""D:\Viaticos""." }
+if (-not $App) {
+    Fallar "No encontré la carpeta del programa. Copie este ACTUALIZAR_DESDE_GITHUB.bat dentro de la carpeta donde está Sistema_Viaticos.exe y ábralo otra vez (así lo encuentra solo)."
+}
 if (-not (Test-Instalacion $App)) {
     Fallar "En '$App' no está el Sistema de Viáticos (no hay $NombreExe ni main_qt.py)."
 }
