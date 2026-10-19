@@ -285,7 +285,7 @@ Nota: la justificación siempre toma el **viático general** (original + todos l
 2. **Botón "🆕 Nuevo viático"** en la barra del Historial: limpia el formulario y va directo a la pestaña de generación.
 3. **Agregar empleados dentro del ajuste**: la sección de empleados adicionales sigue activa en modo ajuste; un empleado nuevo agregado allí recibe el mismo valor nuevo a entregar por día adicional.
 4. **Beneficiario vs Creado por**: en la justificación, "Beneficiario" es el ENCARGADO del viaje (quien viaja) y "Creado por" es la persona que generó el viático en el sistema. En la impresión, BENEFICIARIO muestra al encargado.
-5. **Elaborado por**: nuevo campo en "Resumen y cierre" de la justificación, predeterminado a **el usuario que justifica** (editable, se guarda por viático y sale en la impresión).
+5. **Elaborado por**: nuevo campo en "Resumen y cierre" de la justificación, predeterminado a **PAOLA NARANJO** (editable, se guarda por viático y sale en la impresión).
 6. **Observación libre**: la impresión ya no trae el texto fijo de la JEP; el responsable escribe la observación (a veces es a favor de la empresa, a veces del empleado).
 7. **Botón "Actualizar" eliminado** del área de gastos: hacía lo mismo que "Guardar gasto". Ahora "Guardar gasto" sirve para crear y para modificar el gasto seleccionado.
 
@@ -348,9 +348,9 @@ Nota: la justificación siempre toma el **viático general** (original + todos l
 ## Ajustes de la versión 4.0 (usuarios, superusuario, informe de actividad y ajustes de valores)
 
 1. **Inicio de sesión obligatorio** (`ui_login.py`, nuevo): al abrir el sistema pide **usuario y clave**.
-   Usuarios de creación de viáticos: **VENDEDOR1 a VENDEDOR4** (clave `1234`).
-   Justificación: **JUSTIFICA1** (clave `1234`). El usuario se escribe sin importar
-   mayúsculas y también se acepta una parte del nombre.
+   Usuarios de creación de viáticos: **TATIANA, CRISTINA, MIRIAM y MARTINA** (clave `1234`).
+   Justificación: **PAOLA NARANJO** (clave `1234`). El usuario se escribe sin importar
+   mayúsculas y también se acepta el primer nombre (`PAOLA` = `PAOLA NARANJO`).
    Los usuarios `admin` / `justifica` de versiones anteriores se eliminan al migrar.
 
 2. **Todos pueden hacer todo**: los usuarios normales (vendedoras y justificación)
@@ -420,16 +420,19 @@ Nota: la justificación siempre toma el **viático general** (original + todos l
     de Parámetros (Empleados y Clientes) ahora **detectan solos la columna correcta**
     (buscan el encabezado «Nombre» o «Cliente»), aunque el archivo tenga títulos arriba y
     muchas columnas. Se cargaron:
-    - el listado de personal de la empresa → **todos los empleados** del archivo;
-    - la lista de clientes de la empresa → tomando **solo el nombre**
+    - `LISTADO PERSONAL MIEMPRESA 21092026.xlsx` → **31 empleados** (con
+      JARAMILLO BORJA MARTINA MARIA y NARANJO GONZALEZ MIRIAM PAOLA incluidos);
+    - `LISTA DE CLIENTES MIEMPRESA.xlsx` → **755 clientes**, tomando **solo el nombre**
       (no se importan RUC, ciudad, contacto ni grupo).
     Reimportar el mismo archivo no duplica nada. La lista de empleados quedó igual al
-    Excel; se conservó el nombre suelto que ya estaba usado en un viático existente.
+    Excel; se conservó «YORDANO TERÁN» porque está usado en un viático existente.
 
-14. **Nombres completos en el sistema**: para entrar se sigue escribiendo el **usuario
-    corto** (VENDEDOR1, VENDEDOR2, VENDEDOR3, VENDEDOR4, JUSTIFICA1), pero los campos
-    **«Creado por»** (viático) y **«Elaborado por»** (justificación) firman con el nombre
-    completo del listado de personal. Si el superusuario cambia ese nombre a mano, ya no se
+14. **Nombres completos en el sistema**: para entrar se sigue escribiendo **TATIANA,
+    CRISTINA, MIRIAM, MARTINA, PAOLA NARANJO**, pero los campos **«Creado por»** (viático)
+    y **«Elaborado por»** (justificación) firman con el nombre completo del listado de
+    personal: PEÑA FERNANDEZ MAYRA TATIANA, CASTILLO RIOFRIO IVETTE CRISTINA,
+    LOPEZ ROSALES MIRIAM ANGELA, JARAMILLO BORJA MARTINA MARIA y
+    NARANJO GONZALEZ MIRIAM PAOLA. Si el superusuario cambia ese nombre a mano, ya no se
     pisa.
 
 15. **Pantalla de ingreso más limpia**: el contenido (logo, títulos, campos y botones)
@@ -949,7 +952,7 @@ interfaz anterior (`ui_*.py`, `tema.py`, `dateentry.py`, `main_gui.py`).
      cuatro ejemplos, así nadie tiene que recordarlos.
    - Si la base central todavía no tiene esos tiempos, se cargan con el mismo Excel
      (**Parámetros → Provincias y km → 📥 Importar Excel**) o corriendo
-     `python herramientas\tiempos_de_viaje.py --servidor 192.168.1.171`.
+     `python herramientas\tiempos_de_viaje.py --servidor 192.168.22.171`.
 4. **Comprobaciones de esta ronda**: `python pruebas_qt.py` **43 de 43** (5 nuevas: el parámetro de la
    merienda, su fila en Parámetros y los tres ejemplos de la regla), `python pruebas_horas.py`
    **28 de 28** (los cuatro casos del cliente, el cruce de medianoche, la vuelta a las 23:00 en el
@@ -1047,7 +1050,7 @@ interfaz anterior (`ui_*.py`, `tema.py`, `dateentry.py`, `main_gui.py`).
    programador ya trae puestos **127.0.0.1** (o sea *el propio equipo*, sin pasar por la red ni por el
    firewall) **· puerto 2345 · usuario miempresa · PostgreSQL 18 · 21:00 todas las noches**, así que en el
    servidor se ejecuta **sin escribir nada**. Para sacar el respaldo **desde otra PC** de la red se le pasa
-   la IP como 3.er dato: `PROGRAMAR_RESPALDO_DIARIO.bat 2345 miempresa 192.168.1.4`. Queda **una sola**
+   la IP como 3.er dato: `PROGRAMAR_RESPALDO_DIARIO.bat 2345 miempresa 192.168.22.4`. Queda **una sola**
    tarea, **«Viaticos - respaldo diario»**, que corre **como SYSTEM** (aunque nadie tenga sesión abierta).
    Se eliminó la tarea/pregunta del mediodía que traía la versión anterior.
 2. **No se borra nunca ningún respaldo**: el parámetro de días quedó en **0** por defecto (`DIAS=0`), o sea
@@ -1088,38 +1091,38 @@ interfaz anterior (`ui_*.py`, `tema.py`, `dateentry.py`, `main_gui.py`).
    `QUITAR_RESPALDO_DIARIO.bat`). **No** reinicia servicios, **no** toca `postgresql.conf`, **no** usa el
    puerto 5432, **no** modifica ni borra nada de la base y no borra ningún respaldo (`DIAS=0`).
 
-## Los viáticos ya pagados se volvieron a digitar (prueba contra el Excel)
+## 29 de septiembre de 2026 — Los dos viáticos reales ya pagados (N° 148 y 149)
 
-> Los números de viático, los nombres del personal y los importes de esta prueba son **datos
-> reales de la empresa**, así que **no se publican**: en el repositorio queda solo el método.
-
-1. **Lo que se pidió**: volver a digitar **en el programa y en la base local** viáticos que la
-   empresa **ya había pagado**, para comprobar que el programa liquida **lo mismo** que el Excel, y
-   guardar los PDF para compararlos lado a lado.
-2. **Herramienta de la prueba** (no se versiona, porque lleva los datos reales): hacía copia de
-   seguridad de `data\viaticos.db`, agregaba los viajeros que faltaran a la lista de empleados,
-   creaba los viáticos con las **mismas reglas de la pantalla** (`calculos.calcular` y el reparto del
-   combustible: los km y el parqueadero/peaje solo en la fila del chofer), comparaba concepto por
-   concepto contra lo pagado y dejaba el informe junto a los PDF. Se podía correr con
-   `--sin-guardar` para solo comparar, sin escribir nada. **Nunca tocaba el servidor**: forzaba la
-   base local (SQLite).
-3. **Resultado: coinciden al centavo.** El total del programa, fila por fila y concepto por concepto
-   (comidas, taxis, hospedaje por noche, agua por día, combustible por km y parqueadero/peaje), dio
-   **igual que el Excel**. **No hizo falta cambiar ninguna regla.**
-4. **PDF de la comparación**: el del programa (el mismo de 🖨 IMPRIMIR / PDF) y una copia del
-   formato del Excel de la empresa armada con los mismos datos, para mirarlos lado a lado. Los PDF se
-   generan con Edge en modo invisible: sin abrir ventanas y sin la cabecera que pone el navegador.
-5. **Lo único que no era idéntico**: la columna **«VALOR A RETIRAR EN CAJERO»** del Excel estaba en
-   blanco y el programa sí la calcula (redondeo hacia arriba al múltiplo del cajero). El **TOTAL
-   VIÁTICOS** era el mismo en los dos lados. Si se quiere esa columna en blanco, se apaga el
-   redondeo del cajero en Parámetros.
-6. **Cambios en la base local** (`sistema_viaticos_miempresa\data\viaticos.db`, siempre **con copia
-   de seguridad previa** `viaticos.db.bak_<fecha>`): los viáticos de la prueba, los viajeros que
-   faltaban agregados a la lista, las líneas correspondientes en la bitácora y el **contador del
-   año** puesto en el número correcto para que el próximo viático siga la numeración.
-7. **Datos por confirmar con la empresa** (no cambian ningún valor): el texto de las observaciones,
-   el nombre del cliente en la lista de clientes y el **tipo** de un vehículo, que en el catálogo
-   estaba distinto que en el Excel (*CAMION GRUA* contra *CAMIONETA*).
+1. **Lo que se pidió**: volver a digitar **en el programa y en la base local** los dos viáticos que la
+   empresa ya pagó (personal en **MACAS**: el N° 148 con tres personas en el **ABL-3969** y el N° 149 con
+   dos personas en el **ABI-3147**) y guardar los PDF, con los **mismos valores** que el Excel.
+2. **Herramienta nueva**: `herramientas\viaticos_148_149.py`. Hace copia de seguridad de
+   `data\viaticos.db`, agrega los viajeros que falten a la lista de empleados, crea (o vuelve a crear) los
+   dos viáticos con las **mismas reglas de la pantalla** (`calculos.calcular` y el reparto del
+   combustible, los km y el parqueadero/peaje solo en la fila del chofer), compara concepto por concepto
+   contra lo pagado y deja el informe en `documentacion\VIATICOS_148_149_VERIFICACION.md`. Se puede correr
+   con `--sin-guardar` para solo comparar, sin escribir nada. **Nunca toca el servidor**: fuerza la base
+   local (SQLite).
+3. **Resultado: coinciden al centavo.** Total del N° 148 **$415,00** (183 + 116 + 116) y del N° 149
+   **$300,00** (184 + 116), igual que el Excel, fila por fila y concepto por concepto (comidas $15,00,
+   taxis $3,00 y $3,00, hospedaje $60,00 = 4 noches × $15,00, agua $5,00 = 5 días, combustible $57,50 =
+   230 km × $0,25, parqueadero/peaje $9,50 y $10,50). **No hizo falta cambiar ninguna regla.**
+4. **PDF guardados** en `PDF_VIATICOS_148_149\`: `viatico_148-2026.pdf` y `viatico_149-2026.pdf` (los del
+   programa, los mismos de 🖨 IMPRIMIR / PDF) y `…_formato_empresa.pdf`, que es **una copia del formato
+   del Excel de la empresa** armada con los mismos datos, para mirarlos lado a lado. Los PDF se generan
+   con Edge en modo invisible: sin abrir ventanas y sin la cabecera que pone el navegador.
+5. **Lo único que no es idéntico**: la columna **«VALOR A RETIRAR EN CAJERO»** del Excel está vacía y el
+   programa sí la calcula (redondeo hacia arriba al múltiplo de $5: 185 y 120). El **TOTAL VIÁTICOS** es
+   el mismo en los dos lados. Si se quiere esa columna en blanco, se apaga el redondeo del cajero en
+   Parámetros.
+6. **Cambios en la base local** (`sistema_viaticos_miempresa\data\viaticos.db`, con copia previa en
+   `viaticos.db.bak_20260929`): viáticos **2026148** y **2026149** (N° 148 y 149 de 2026), los empleados
+   **YOHANDER HERNANDEZ** y **DAVID YANEZ** agregados a la lista, dos líneas en la bitácora y el contador
+   del año puesto en **149** para que el próximo viático salga como **150**.
+7. **Datos por confirmar con la empresa** (no cambian ningún valor): el texto de las observaciones
+   («BRANDING DE FACHADA»), el cliente **LA MERCED** (en la lista de clientes figura como *COOPERATIVA DE
+   AHORRO Y CREDITO LA MERCED*) y el tipo del ABL-3969, que en el catálogo de vehículos está como
+   *CAMION GRUA* y en el Excel aparece como *CAMIONETA*.
 
 ## Versión 6.9 — El ENTER ya no cierra la ventana, el combustible a mano entra y MACAS con sus datos
 
@@ -1169,9 +1172,10 @@ interfaz anterior (`ui_*.py`, `tema.py`, `dateentry.py`, `main_gui.py`).
 
 1. **El error**: en la justificación salía un «entregado» que no era el entregado. El sistema
    redondeaba la cuenta de **cada viajero** al múltiplo del cajero ($5 de fábrica) y **después
-   sumaba**, así que el total quedaba por encima del dinero que de verdad se retiró: el retiro del
-   cajero lo hace **una sola persona** (el encargado) y lleva el dinero de todo el grupo, por lo que
-   el redondeo tiene que hacerse **una sola vez**, sobre el total.
+   sumaba**. En el viático **N° 148** de MACAS (183 + 116 + 116 = **$415**) el redondeo por persona
+   daba 185 + 120 + 120 = **$425**: $10 más de lo que se retiró, porque a ellos solo les mandaron
+   sus **415** — el retiro del cajero lo hace **una sola persona** (el encargado) y lleva el dinero
+   de todo el grupo.
 2. **La regla nueva** (`calculos.cajero_del_grupo`): el redondeo se hace **una sola vez**, sobre el
    **total del viático**, y el valor queda en la fila del **encargado** (las demás filas en cero,
    porque el retiro es uno solo). Como todo el sistema —la vista previa, el PDF, la justificación,
@@ -1180,17 +1184,20 @@ interfaz anterior (`ui_*.py`, `tema.py`, `dateentry.py`, `main_gui.py`).
    el ajuste (`q_viaje._filas_ajuste`, con el total del ajuste). `calculos.calcular` sigue
    devolviendo el redondeo **por fila** porque así lo hace el formato viejo del Excel: es lo que
    miden las herramientas de comparación (punto 6).
-3. **Los viáticos que ya estaban guardados**: herramienta `herramientas\recalcular_cajero.py`.
+3. **Los viáticos que ya estaban guardados**: herramienta nueva `herramientas\recalcular_cajero.py`.
    Muestra el cuadro (N°, total, cajero guardado, el que le toca y la diferencia) y **solo escribe
    con `--aplicar`**; antes de escribir hace copia de seguridad de la base local y deja el cambio en
    la bitácora. De fábrica **no toca los viáticos JUSTIFICADOS** (historia cerrada; se revisan con
-   `--todas`). Con eso se pusieron al día los viáticos guardados con el valor viejo; los que se
-   decida dejar como están, se quedan (el comando avisa la diferencia antes de tocar nada).
-4. **Comprobado en vivo** (PySide6 sin monitor, base local real): al volver a digitar un viático ya
-   guardado, el **CAJERO** queda **en la fila del encargado** (y en $0,00 la de los acompañantes) y
-   la fila de **TOTALES** de la vista previa muestra la misma cifra en TOTAL y en CAJERO; la
-   pantalla **JUSTIFICAR** dice el «Entregado» correcto y sugiere devolver ese mismo valor; y un
-   ajuste de prueba redondea una sola vez. Sin errores de armado en las dos ventanas.
+   `--todas`). Se corrigieron los dos viáticos de MACAS que estaban con el valor viejo: **N° 148**
+   (425 → **415**) y **N° 149** (305 → **300**). Quedan a su decisión **N° 002/2026** (450 → 425),
+   **N° 003/2026** (220 → 215) y su **ajuste N° 1** (280 → 265): se corrigen solo si el dinero se
+   retiró por el total (con el mismo comando, que ya avisa la diferencia).
+4. **Comprobado en vivo** (PySide6 sin monitor, base local real): el viático N° 148 vuelto a
+   digitar da 183 + 116 + 116 con **CAJERO $415,00** en la fila del encargado y $0,00 en los
+   acompañantes, y la fila de **TOTALES** de la vista previa dice **TOTAL $415,00 · CAJERO
+   $415,00**; la pantalla **JUSTIFICAR** dice «Entregado: $415.00» y sugiere devolver $415,00
+   (antes 425,00); el **N° 149** dice «Entregado: $300.00» (antes 305,00); y un ajuste de prueba
+   redondea una sola vez (528 → 530). Sin errores de armado en las dos ventanas.
 5. **Para las computadoras**: es **código nuevo**, así que hay que volver a empaquetar
    (`EMPAQUETAR_EXE_SERVIDOR.bat`) y copiar `dist\Sistema_Viaticos.exe` a cada PC. El cambio de los
    viáticos ya guardados es **dato de la base**: está hecho en la base **local** (que es la que se
@@ -1199,7 +1206,7 @@ interfaz anterior (`ui_*.py`, `tema.py`, `dateentry.py`, `main_gui.py`).
 6. **Ojo con las herramientas de comparación**: `herramientas\comparar_reglas_excel.py` y
    `comparar_excel_viaticos.py` siguen midiendo el redondeo **fila por fila** (la fórmula del
    formato viejo del Excel): sirven para comparar fórmulas, no para saber lo que retira el sistema.
-   Los PDF de la prueba son de antes de este cambio (solo cambia la columna CAJERO).
+   Los PDF de `PDF_VIATICOS_148_149\` son de antes de este cambio (solo cambia la columna CAJERO).
 
 
 ## Versión 8.0 — El BUS también se calcula solo (el mismo tiempo de viaje que los demás)
@@ -1446,7 +1453,7 @@ interfaz anterior (`ui_*.py`, `tema.py`, `dateentry.py`, `main_gui.py`).
    igual**, que **otro usuario no vea nada** y que al limpiar el formulario se borre),
    `pruebas_ventanas.py` **8 de 8**, `pruebas_horas.py` **0 fallos** y `pruebas_conexion.py`
    **8 de 8**. Además, con el **`.exe` nuevo** y su autodiagnóstico (`VIATICOS_SELFTEST=1`) contra la
-   **base central** (192.168.1.4:2345): **todo correcto**, los 13 módulos cargados y la tabla
+   **base central** (192.168.22.4:2345): **todo correcto**, los 13 módulos cargados y la tabla
    `borradores` **creada sola** en la central (`usuario` · `pantalla` · `datos` ·
    `actualizado_el`), con el ciclo guardar → leer → borrar comprobado en PostgreSQL (con un usuario de
    prueba que se borró después: no queda ningún borrador). En la base local de este equipo también se
@@ -1494,7 +1501,7 @@ interfaz anterior (`ui_*.py`, `tema.py`, `dateentry.py`, `main_gui.py`).
    196 km · 4 h, antes 200 km · 3,5 h), `pruebas_ventanas.py` **8 de 8** y `pruebas_conexion.py`
    **8 de 8**.
 7. **El `.exe`**: rearmado con `EMPAQUETAR_EXE_SERVIDOR.bat` apuntando a la central
-   (192.168.1.4:2345) y comprobado con su autodiagnóstico (`VIATICOS_SELFTEST=1`) contra esa base:
+   (192.168.22.4:2345) y comprobado con su autodiagnóstico (`VIATICOS_SELFTEST=1`) contra esa base:
    **todo correcto**. Los Excel que lleva dentro ya son los cuadrados.
 8. **Para las computadoras**: es **código nuevo** (`database.py`, `q_admin.py`, `pruebas_*`), así que
    hay que volver a copiar `dist\Sistema_Viaticos.exe`. **A la base central no hay que aplicarle
@@ -1524,16 +1531,204 @@ interfaz anterior (`ui_*.py`, `tema.py`, `dateentry.py`, `main_gui.py`).
    columnas, las dos nuevas incluidas) y la repone `_restaurar_cierre()`, que usan las dos ediciones (la
    del original y la del ajuste). Si mañana se agrega otra columna de cierre, con sumarla a esa
    constante queda protegida.
-4. **Comprobado sobre una COPIA de la base** (`data\viaticos.db` **no se tocó**): se editaron el original
-   y el ajuste de los viáticos **guardando exactamente lo mismo** y se comparó **fila por fila y
-   columna por columna**, incluido el cierre: **sin diferencias**. El antes/después quedó a
+4. **Comprobado sobre una COPIA de la base** (`data\viaticos.db` **no se tocó**): se editó el original y
+   el ajuste de los **5 viáticos** guardando **exactamente lo mismo** y se comparó **fila por fila y
+   columna por columna**, incluido el cierre: **sin diferencias** en los cinco. El antes/después quedó a
    la vista: con el código viejo el formulario cargaba `km=0 · peaje=0` y la edición dejaba
-   `elaborado_por = None`; con el nuevo carga el **km y el peaje que tenía el viático** y
-   conserva `elaborado_por`.
+   `elaborado_por = None`; con el nuevo carga `km=60 · peaje=5` (N° 001, el chofer era LAYS MILAD) y
+   conserva `elaborado_por = MIEMPRESA`.
 5. **Lo demás sigue igual**: `pruebas_qt.py` **60 de 60**, `pruebas_ventanas.py` **8 de 8**,
    `pruebas_conexion.py` **8 de 8** y `pruebas_horas.py` **0 fallos**.
 6. **Para las computadoras**: es **código nuevo** (`q_viaje.py` y `database.py`), así que hay que volver
    a copiar `dist\Sistema_Viaticos.exe`. **A la base no hay que aplicarle nada**: los viáticos guardados
    están bien; lo que estaba mal era la pantalla al editarlos.
+
+## Versión 8.8 — El ajuste paga los días nuevos de verdad (y el taxi de vuelta)
+
+1. **Lo que pasaba con los ajustes** (`q_viaje._filas_ajuste`): el ajuste se calculaba a
+   mano y siempre desde el **regreso del viático original**, no desde donde se había
+   quedado el último ajuste. De ahí salían tres errores:
+   - del **segundo ajuste** en adelante la **salida** quedaba con la fecha del original y
+     se **volvían a pagar días ya entregados** (el mismo día, dos veces);
+   - el **hospedaje** se cobraba **por día** (`valor × días`) en vez de **por noche**, o
+     sea una noche de más en cada ajuste;
+   - el **taxi de regreso no se pagaba nunca**: el total del ajuste era
+     `desayuno + almuerzo + merienda + hospedaje + agua`, **sin taxis**.
+2. **El arreglo** (`calculos.py`, `q_viaje.py`): el período del ajuste lo arma
+   `calculos.datos_ajuste` y empieza el día siguiente al **último regreso ya pagado**
+   (`db.ultimo_regreso_entregado`, que mira el original **y los ajustes anteriores**) a
+   las `00:00`; se calcula con `calculos.calcular(..., ajuste=True)`, la **misma fórmula
+   del Excel** que el viático original: `días − 1` comidas más la del extremo por hora,
+   hospedaje por noches, agua por día y **taxi de regreso** según la hora de llegada. El
+   **taxi de salida** queda en cero a propósito: el viajero ya salió en el original.
+3. **Por qué a veces «no daba el dinero de los taxis»**: en el viático normal el taxi
+   depende de la hora y no siempre entra —el de **salida** se paga si sale a las **06:00
+   o antes** y el de **regreso** si vuelve a las **21:00 o después**—, así que el que sale
+   06:30 o vuelve 20:45 lo ve en **$0**. El que vuelve **después de medianoche** (01:00)
+   tampoco entra, porque esa hora es menor que 21:00, salvo que el superusuario active
+   **«Taxi regreso — pagarlo también al que vuelve de madrugada»**
+   (`taxi_regreso_madrugada`, apagado de fábrica porque el Excel tampoco lo paga). Para
+   que no parezca un error, debajo de la vista previa el sistema **explica el $0**:
+   «Taxi de regreso $0: se paga si vuelve a las 21:00 o después (vuelve a las 19:30)».
+4. **Comprobado** (`pruebas_ajustes.py`, base temporal, **20 comprobaciones · 0 fallos**):
+   viático 04/10 05:00 → 11/10 22:15 y dos ajustes. **Ajuste 1** (12/10 → 16/10, vuelve
+   22:15): **$113,00** = desayuno, almuerzo y merienda (15 + 15 + 15), hospedaje de **4
+   noches** (60), agua (5) y **taxi de regreso (3)**. **Ajuste 2** (empieza el **17/10**,
+   no el 12/10): **$13,00** = 3 + 3 + 3 + **0** de hospedaje (vuelve el mismo día) + 1 +
+   **3** de taxi. Entregado en los ajustes: **$126,00**.
+5. **Documentos al día**: `FUNCIONAMIENTO_VIATICOS.md` (§11.1, §11.2 y §11.3),
+   `GUIA_DEL_SISTEMA.md` (§8) y el capítulo del ajuste de `MANUAL_DE_USUARIO.md` seguían
+   describiendo el ajuste **viejo** («sin taxis», hospedaje por día). Ahora dicen lo que
+   hace el sistema, y el manual explica que la ventana avisa **por qué** un taxi sale en
+   cero.
+6. **Para las computadoras**: es **código nuevo** (`calculos.py`, `q_viaje.py`), así que
+   hay que volver a empaquetar (`EMPAQUETAR_EXE_SERVIDOR.bat`) y copiar
+   `dist\Sistema_Viaticos.exe`. **A la base no hay que aplicarle nada**: los viáticos y
+   los ajustes ya guardados están bien; lo que estaba mal era la cuenta del ajuste nuevo.
+
+## Versión 8.9 — Los taxis se pagan cuando toca (y el manual en PDF)
+
+1. **Los dos síntomas que se veían**: a veces **no se pagaba ningún taxi** y a veces
+   **aparecía un taxi donde no correspondía** (en un viático nuevo o en un ajuste). No
+   era el azar: la regla del taxi depende de una **hora límite** y, cuando esa hora
+   llegaba mal, el cálculo se **invertía**. Con la hora límite en `00:00`, el taxi de
+   **regreso** se paga **en todos** los viáticos (`hora_regreso >= 00:00` siempre es
+   cierto) y el de **salida** **en ninguno** (`hora_salida <= 00:00` casi nunca).
+2. **Cuándo llegaba mal la hora** (la causa, no el síntoma): `hora_limite()` partía el
+   texto en **dos** trozos exactos (`"06:00".split(":")`), así que un parámetro guardado
+   como **`"06:00:00"`** —lo que devuelve PostgreSQL y lo que se escribe en Excel— o una
+   base vieja **sin las columnas de hora** caían al valor por defecto `00:00`. Lo mismo
+   hacía `database._leer_parametros()`, que además **fallaba entero** con los segundos.
+3. **El arreglo** (`calculos.py`): `hora_limite()` acepta `time`, `"06:00"`, `"6:00"`,
+   `"06:00:00"` y números; y cuando un parámetro falta o no se entiende se usa su **hora
+   de fábrica** (`HORAS_DE_FABRICA`: 06:00 salida/desayuno, 13:00 almuerzo, 21:00
+   merienda y taxi de regreso), **nunca `00:00`**. En `database.py`,
+   `_hora_parametro()` hace lo mismo al leer la fila de parámetros y `q_viaje._hora()`
+   tolera `"6:00"` y `"06:00:00"` en los combos (antes avisaba «too many values to
+   unpack»). Comprobado: `pruebas_taxis.py`, **26 comprobaciones · 0 fallos** (antes
+   fallaban 5, entre ellas las dos de arriba).
+4. **La madrugada tenía su propia trampa**: para decidir si alguien «vuelve de
+   madrugada» se usaba la **hora límite del taxi de salida**. Si el superusuario la
+   cambiaba (por ejemplo a las 09:00), el que volvía a las **08:30** cobraba un «taxi de
+   madrugada» que no era. Ahora la madrugada es siempre **antes de las 06:00**
+   (`HORA_FIN_MADRUGADA`), y una **ida y vuelta en la misma madrugada** (sale 04:00 y
+   vuelve 05:30) paga **un solo** taxi, el de salida: es el mismo traslado. En un
+   **ajuste** la salida es a las 00:00 (la marca del período), así que ahí sí se paga el
+   de regreso si vuelve de madrugada.
+5. **Documentos al día**: el manual (§3.6) ahora trae el cuadro **«Los dos taxis, en una
+   línea»**; `FUNCIONAMIENTO_VIATICOS.md` (§10.2 y §10.5) dice lo mismo que el código, y
+   la tabla de pruebas (§21.1) incluye `pruebas_taxis.py` y `pruebas_ajustes.py`.
+6. **El manual, también en PDF**: `documentacion\MANUAL_DE_USUARIO.pdf` (**27 páginas**)
+   con portada, índice con números de página, cada capítulo en página nueva, las capturas
+   enmarcadas con su número y las notas en **cuadros azules**. Se arma solo desde el
+   `.md` con `herramientas\manual_pdf.py` (o `MANUAL_A_PDF.bat`), así que no hay dos
+   versiones que se puedan desincronizar.
+7. **El manual estaba partido**: el paso 3 de **§6.4** terminaba en «con» y los pasos 4 y
+   5, la nota del PDF y **todo §6.5** aparecían al final del documento, **después de la
+   firma**. Ya están en su lugar, y se quitó un párrafo repetido («Las claves se guardan
+   cifradas…»).
+8. **Para las computadoras**: es **código nuevo** (`calculos.py`, `database.py`,
+   `q_viaje.py`), así que hay que volver a empaquetar (`EMPAQUETAR_EXE_SERVIDOR.bat`) y
+   copiar `dist\Sistema_Viaticos.exe`. **A la base no hay que aplicarle nada**: los
+   viáticos guardados están bien; lo que estaba mal era la cuenta del viático nuevo.
+
+## Versión 9.0 — El repaso total del cálculo: los Excel reales, celda por celda (y la noche que faltaba en los ajustes)
+
+1. **Se revisó el motor contra el Excel real, celda por celda.** `pruebas_reglas.py`
+   lee `VIATICO 2 2026.xlsx`, toma las tarifas y las horas de **su** hoja «Parámetros»
+   ($3 por comida, $3 por taxi, $15 por noche, $1 de agua, $0.25 por km, 06:00 / 13:00 /
+   21:00) y compara con `calculos.calcular()` **cada celda que el Excel calcula solo**
+   —Días, Desayuno, Almuerzo, Merienda, Taxi de salida, Taxi de regreso, Hospedaje,
+   Agua, Combustible y TOTAL—: **514 celdas en 60 filas · 0 diferencias**. Las reglas de
+   los dos lados son las mismas.
+2. **Lo que sí se aparta es lo que la empresa escribió a mano** (y ahora está medido, no
+   supuesto): 12 almuerzos (−$36), 5 meriendas (+$15), 4 taxis de salida (−$12), 2 de
+   regreso (+$6), 3 aguas (−$3) y 11 combustibles (−$461.75, porque en unas semanas se
+   escribió **$0.10 por km** y en otras $0.25). No es un error del programa: es la hoja
+   sobrescrita. El detalle, fila por fila, está en `COMPARACION_REGLAS_NUEVO_EXCEL.md`.
+   **Decisión de la empresa (18/10/2026): el combustible queda en $0.25 por km**, que es
+   el valor de la hoja «Parámetros» y el de fábrica del programa; si más adelante usan
+   otra tarifa, la cambian en **Parámetros → Combustible** sin tocar código.
+3. **La noche que faltaba en los ajustes** (el error que encontró este repaso). Un ajuste
+   arranca el día siguiente al último regreso entregado, y el viático anterior paga las
+   noches **hasta la víspera** de su regreso: la noche del día del regreso **no la pagaba
+   nadie**. En el viático 164/2026, con el regreso original el 11/10 y dos ajustes hasta
+   el 20/10, se pagaban **14 noches de las 16** que la persona durmió fuera ($30 menos).
+   Ahora `DatosViaje` lleva `noches_desde` (el último día entregado) y `datos_ajuste()` lo
+   pone solo: el original y todos los ajustes suman **todas** las noches (y todos los días
+   y el agua). Comprobado con 27 cadenas de 1 a 3 ajustes en `pruebas_reglas.py`, parte D.
+4. **Tres endurecimientos del motor**: `redondear_cajero()` devuelve el valor con **dos
+   decimales** (antes un múltiplo de $0.05 podía quedar en `1234.6000000000001`), y los
+   gastos de la fila (`combustible_efectivo`, `km_recorridos`, `parqueadero_peaje`,
+   `otros`) se leen con `_numero()`, así que un dato que llegue como **texto** («40») ya
+   no rompe la cuenta.
+5. **La prueba nueva `pruebas_reglas.py`: 734 comprobaciones · 0 fallos.** Además del
+   Excel real trae: **casos de oro** hechos a mano (un día, dos días, cinco días, vuelta
+   de madrugada, medianoche, cuatro días con 470 km) y el **ejemplo de cuatro personas a
+   Quito del Excel** ($94 / $181.50 / $54 / $94 y **$450 de cajero**, que solo cuadra con
+   **un** redondeo sobre el total); el **barrido de las 96 cuartos de hora del día** en
+   cinco escenarios (ida y vuelta el mismo día, regreso al día siguiente, viaje largo,
+   ajuste y ajuste sobre ajuste: **480 escenarios**); ajustes encadenados; parámetros
+   vacíos, en texto, con segundos, imposibles o de una base vieja; el cajero del grupo; la
+   lectura de horas; y los bordes de días, noches y comidas. Deja el detalle en
+   `pruebas_reglas_resultado.txt`.
+6. **`pruebas_ajustes.py` pasó a 22 comprobaciones**: además de las tres de siempre, ahora
+   comprueba que el original y sus ajustes paguen **los 14 días y las 13 noches** del
+   viaje de prueba (y que el ajuste 1 cobre la noche del 11, que antes se perdía).
+7. **`_revision\correr_pruebas.bat` corre las de cálculo primero**: `pruebas_horas.py`,
+   `pruebas_reglas.py`, `pruebas_taxis.py`, `pruebas_qt.py`, `pruebas_ventanas.py`,
+   `pruebas_excel.py`, `pruebas_conexion.py` y `pruebas_ajustes.py`.
+8. **Documentos al día**: `FUNCIONAMIENTO_VIATICOS.md` §10 (campos de `DatosViaje`),
+   §11.2 (fórmula del ajuste con `noches_desde` y por qué) y §21.1 (la tabla de pruebas
+   con `pruebas_reglas.py`); el manual del usuario (§6.4) y el **PDF regenerado**
+   (**27 páginas**, 31 entradas de índice) con `herramientas\manual_pdf.py`.
+9. **Para las computadoras de trabajo**: `calculos.py` cambió, así que se publica con
+   `PUBLICAR_VERSION.bat` (sube `version.txt`, hace el commit y lo manda a GitHub) y en
+   cada PC se corre **`ACTUALIZAR_DESDE_GITHUB.bat`**, que guarda la versión anterior en
+   `respaldos_actualizacion\` y **no toca** `data\`, `config.json` ni los `*.db`. Si el
+   sistema está empaquetado como `.exe`, hay que volver a empaquetar. **A la base no hay
+   que aplicarle nada.**
+
+## Versión 9.1 — El taxi de regreso se paga una sola vez (y el manual con el logo)
+
+1. **El síntoma.** En el *TOTAL GENERAL* de un viático con ajustes, la columna **Taxi R.**
+   crecía con cada bloque: dos personas con dos ajustes terminaban en **$18,00** cuando lo
+   que correspondía era **$6,00**. Cada ajuste volvía a pagar el regreso de todos.
+2. **La causa.** `calcular(..., ajuste=True)` devuelve el taxi de regreso cuando la hora de
+   regreso llega a la hora límite, y `_construir_filas` lo sumaba a **cada** fila del ajuste
+   sin preguntar si ya se había pagado antes. Pero el taxi de regreso es **uno por viático**:
+   el empleado vuelve a su casa **una sola vez**, no una vez por cada ampliación.
+3. **El arreglo (idempotente).** `q_viaje.taxi_regreso_pagado(numero, ajuste_numero)` lee las
+   filas **ya guardadas** del viático con `ajuste_numero` menor que el que se está armando y
+   dice, empleado por empleado, si el taxi de regreso ya se entregó. Con eso:
+   - si el **original** ya lo pagó, los ajustes muestran **$0**;
+   - si el original **no** lo pagó (volvía antes de las 21:00) y el regreso del ajuste **sí**
+     llega a la hora límite, **ese** ajuste lo paga, una sola vez;
+   - el ajuste siguiente vuelve a mostrar **$0**, y un empleado **nuevo** que no estaba antes
+     sí lo cobra (si la hora corresponde).
+   El total del ajuste se arma sin el taxi (`total = calc["total"] − calc["taxi_regreso"]`) y
+   se le suma **solo** a las filas que lo cobran, así el total de la fila, el del ajuste y el
+   del viático cuadran entre sí.
+4. **En pantalla se explica el $0**: «Taxi de regreso $0: ya se pagó en el viático original
+   (se paga una sola vez, cuando vuelve de verdad)», distinto del «se paga si vuelve a las
+   21:00 o después (vuelve a las 19:30)» de cuando todavía no corresponde.
+5. **Pruebas: `pruebas_ajustes.py` → 28 comprobaciones · 0 fallos.** La parte **D** nueva
+   arma el caso completo: original que vuelve **19:30** (sin taxi) → ajuste que vuelve
+   **22:15** (paga **$3** y el total lo incluye) → ajuste siguiente (**$0**). Siguen en cero
+   fallos `pruebas_taxis.py` (26 · 0), `pruebas_reglas.py` (734 · 0) y `pruebas_horas.py`.
+6. **Los que viajan son EMPLEADOS.** El manual, la guía y el informe ya no dicen
+   «vendedor/viajero»: dicen **empleado**. El rol se muestra como **EMPLEADO(A)**
+   (`database.ETIQUETA_ROL` y `q_usuarios.ROLES_UI`); el valor guardado sigue siendo
+   `vendedor`, así que **no hay que migrar la base** ni los usuarios existentes.
+7. **El manual, con el logo.** La portada del **MANUAL_DE_USUARIO.pdf** lleva el logo de
+   **RESG Tech** (`documentacion\manual\img\logo-resg-tech.png`, y `logo-resg.png` para el
+   logo solo), sube a **versión 9.1** y se quitó el párrafo interno de cómo se generan las
+   capturas: eso es documentación técnica (`FUNCIONAMIENTO_VIATICOS.md`), no del manual.
+8. **Para las computadoras de trabajo.** Cambian `q_viaje.py`, `database.py` y
+   `q_usuarios.py`: hay que **reempaquetar** (`EMPAQUETAR_EXE_SERVIDOR.bat`), publicar con
+   `PUBLICAR_VERSION.bat` y en cada PC correr `ACTUALIZAR_DESDE_GITHUB.bat`. **A la base no
+   hay que aplicarle nada.** Ojo: los ajustes **viejos** que ya salieron con el taxi
+   duplicado conservan su total (el sistema no reescribe lo guardado); si hay que devolver
+   ese valor, se corrige a mano en el ajuste correspondiente.
 
 

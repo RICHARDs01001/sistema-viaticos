@@ -40,6 +40,20 @@ actividad.
 - **Interfaz que se adapta a cada PC**: zoom propio por computadora, ventanas maximizadas y textos
   en dos líneas para que la *Justificación* entre completa en un monitor de 1080p.
 
+## Capturas
+
+| Viáticos | Justificación |
+| --- | --- |
+| ![Viáticos](capturas/Vi_ticos.png) | ![Justificación](capturas/Justificaci_n.png) |
+
+| Parámetros y catálogos | Bitácora |
+| --- | --- |
+| ![Parámetros](capturas/Par_metros_y_cat_logos.png) | ![Bitácora](capturas/Bit_cora.png) |
+
+| Usuarios | Respaldos | Conexión a la base |
+| --- | --- | --- |
+| ![Usuarios](capturas/Usuarios.png) | ![Respaldos](capturas/Respaldos.png) | ![Conexión](capturas/Conexi_n.png) |
+
 ## Requisitos
 
 - **Windows 10/11** (probado en 64 bits).
@@ -124,8 +138,10 @@ autor en *Propiedades → Detalles*). A cada computadora se copia **solo ese arc
 │   └── PROBAR_SERVIDOR.bat        Probar el puerto desde otra PC
 ├── herramientas\                  Utilidades (firma/limpieza y tiempos de viaje)
 ├── documentacion\                 Guías en detalle
+├── capturas\                      Capturas de pantalla del sistema
 ├── LEEME_PRIMERO.md               Por dónde empezar (uso y entrega)
 ├── CREDITOS.md / LICENCIA.md      Autoría y condiciones de uso
+├── COMO_SUBIR_A_GITHUB.md         Pasos para publicar este repositorio
 └── README.md
 ```
 
@@ -152,18 +168,15 @@ Los resultados quedan en `pruebas_*_resultado.txt`.
 
 ## Datos y privacidad
 
-Este repositorio contiene **solo el programa y su documentación genérica**. **No** se versiona
-(está en `.gitignore`):
+Este repositorio contiene **solo el programa y su documentación**. **No** se versiona:
 
 - `excel\` — listados reales de empleados y clientes.
 - `data\` — base local (SQLite) y PDF de facturas.
 - `respaldos_base\*.sql` — respaldos de la base de la empresa.
-- `config.json` — dirección, clave y zoom **de cada computadora**.
+- `config.json` — dirección, clave y zoom **de cada computadora** (está en `.gitignore`).
 
-> **Los datos de la empresa no se publican.** Los catálogos de fábrica (personal, vehículos y
-> usuarios) son **de ejemplo**: el listado real se carga con *Importar Excel*. Los informes que
-> se hacen comparando los Excel reales también se quedan fuera del repositorio, igual que los
-> PDF de facturas y las capturas tomadas del sistema en producción.
+> Si el repositorio es **público**, revise las **capturas** (`capturas\`): están tomadas del sistema
+> real y pueden mostrar nombres y valores de la empresa. Lo recomendable es dejarlo **privado**.
 
 ## Autoría y licencia
 

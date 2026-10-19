@@ -28,7 +28,8 @@ import database as db
 import qt_comunes as C
 import qt_tema as T
 import reportes
-from calculos import DatosViaje, calcular, cajero_del_grupo, hora_limite, horas_texto
+from calculos import (DatosViaje, calcular, cajero_del_grupo, datos_ajuste, hora_limite,
+                      horas_texto)
 
 HORAS = ["%02d:%02d" % (h, m) for h in range(24) for m in (0, 15, 30, 45)]
 
@@ -73,6 +74,43 @@ def fmt_f(iso):
         return str(iso)
 
 
+def taxi_regreso_pagado(numero, ajuste_numero):
+    """Empleados a los que **ya** se les pagó el taxi de regreso antes de este ajuste.
+
+    El taxi de regreso se paga **una sola vez** en todo el viático: el viajero vuelve a
+    su casa **al final**, no una vez por cada ampliación. Por eso, cuando se arma un
+    ajuste, se mira lo que quedó guardado en el viático original y en los ajustes
+    anteriores (solo los bloques anteriores a `ajuste_numero`):
+
+      - si el original ya lo pagó, el ajuste **no** lo vuelve a sumar (se mantiene el
+        valor que ya se entregó);
+      - si el original no lo pagó (volvía temprano) y el regreso de este ajuste ya está
+        a la hora límite, `calculos.calcular` lo trae y **aquí** se paga;
+      - si un empleado entra de nuevo (no estaba antes), se le paga en este ajuste.
+
+    Antes el taxi de regreso se sumaba en **cada** bloque: en un viático de dos personas
+    con dos ajustes la columna Taxi R. terminaba en $18,00 cuando solo se debía pagar
+    una vez ($6,00).
+    """
+    pagados = set()
+    if not numero:
+        return pagados
+    try:
+        guardadas = db.filas_numero(numero)
+    except Exception:
+        return pagados
+    tope = int(ajuste_numero or 0)
+    for fila in guardadas:
+        try:
+            if int(fila.get("ajuste_numero") or 0) >= tope:
+                continue
+        except (TypeError, ValueError):
+            continue
+        if abs(float(fila.get("taxi_regreso") or 0)) > 0.004:
+            pagados.add((fila.get("nombre_empleado") or "").strip().upper())
+    return pagados
+
+
 def _col(clave, titulo, ancho, izquierda=False):
     return (clave, titulo, ancho, Qt.AlignLeft if izquierda else Qt.AlignRight)
 
@@ -85,7 +123,7 @@ COLS_DETALLE = [
     _col("h_sal", "H.Sal", 60), _col("f_reg", "F.Regreso", 96),
     _col("h_reg", "H.Reg", 60), _col("f_lt", "F.Lleg.Trab", 96),
     _col("h_lt", "H.Lleg", 60), _col("f_st", "F.Sal.Trab", 96),
-    _col("h_st", "H.Sal.Trab", 62), _col("dias", "Días", 38), _col("km", "Km", 44),
+    _col("h_st", "H.Sal.Trab", 62), _col("dias", "Días", 40), _col("km", "Km", 58),
     _col("des", "Desay.", 60), _col("alm", "Almuer.", 62), _col("mer", "Merien.", 62),
     _col("txs", "Taxi S.", 58), _col("txr", "Taxi R.", 58), _col("hos", "Hosp.", 62),
     _col("agua", "Agua", 52), _col("comb", "Combust.", 74),
@@ -295,6 +333,20 @@ def comidas_del_viaje(p, salida, fin):
     return comidas
 
 
+def _fecha_en_rango(texto, desde, hasta, por_defecto):
+    """Fecha del formulario si cae dentro del período; si no (o si falta), la de respaldo.
+
+    Se usa en los ajustes: la llegada al trabajo y la salida del trabajo que vienen del
+    viático original son fechas viejas (anteriores al período del ajuste) y no deben
+    quedar escritas en el ajuste.
+    """
+    try:
+        f = _fecha.fromisoformat(str(texto or "")[:10])
+    except ValueError:
+        return por_defecto
+    return f if desde <= f <= hasta else por_defecto
+
+
 def detalle_viaje(km, velocidad, p, salida=None, horas=None):
     """(horas totales, recorrido, [(comida, horas, hora límite)]) de **un tramo**.
 
@@ -478,6 +530,8 @@ class ViajeWindow(C.Ventana):
         self.edit_ajuste_numero = None     # ajuste que se está editando
         self._combustible_sugerido = 0.0
         self._km_orig_ajuste = 0.0
+        self._fijando_fechas = False       # evita que acomodar las fechas se repita
+        self._saltr_auto = False           # la «salida del trabajo» la puso el sistema
         self._salida_bloqueada = False
         self._hist_firma = None
         # Memoria temporal: `_borrador_base` es cómo estaba el formulario al abrirlo (o al
@@ -571,7 +625,7 @@ class ViajeWindow(C.Ventana):
         self.cal_salida = C.CampoFecha(ancho=135, cb=lambda _v: self._recalcular_horas())
         self.cal_regreso = C.CampoFecha(ancho=135, cb=lambda _v: self._refrescar_prev())
         self.cal_lleg = C.CampoFecha(ancho=135, cb=lambda _v: self._refrescar_prev())
-        self.cal_saltr = C.CampoFecha(ancho=135, cb=lambda _v: self._recalcular_horas())
+        self.cal_saltr = C.CampoFecha(ancho=135, cb=lambda _v: self._cambio_saltr())
         self.cb_hsalida = C.CampoHora("08:00", ancho=90, cb=lambda _v: self._recalcular_horas())
         self.cb_hregreso = C.CampoHora("18:00", ancho=90, cb=lambda _v: self._refrescar_prev())
         self.cb_hlleg = C.CampoHora("08:00", ancho=90, cb=lambda _v: self._refrescar_prev())
@@ -959,10 +1013,20 @@ class ViajeWindow(C.Ventana):
 
     @staticmethod
     def _hora(texto):
-        h, m = (texto or "").strip().split(":")
-        if not (0 <= int(h) <= 23 and 0 <= int(m) <= 59):
+        """Hora del cuadro combinado (`HH:MM`). Acepta también `6:00` y `06:00:00`.
+
+        Lo que venga de la base (o se escriba a mano en el combo) no puede romper el
+        cálculo con un error de «too many values to unpack»: si la hora no existe se
+        avisa que se revise el formato.
+        """
+        partes = str(texto or "").strip().split(":")
+        try:
+            h, m = int(partes[0]), int(partes[1])
+        except (IndexError, ValueError):
             raise ValueError("Revise las horas (formato HH:MM).")
-        return _dtime(int(h), int(m))
+        if not (0 <= h <= 23 and 0 <= m <= 59):
+            raise ValueError("Revise las horas (formato HH:MM).")
+        return _dtime(h, m)
 
     # ---------- acompañantes ----------
     def agregar_pasajero(self):
@@ -1150,48 +1214,68 @@ class ViajeWindow(C.Ventana):
 
     def _filas_ajuste(self, base, nombre, chofer, medio_enc, fr, hr, avisar=False,
                       efectivo=0.0, peaje=0.0, otros=0.0):
-        """Días adicionales del ajuste: comidas, hospedaje y agua.
+        """Días adicionales del ajuste: comidas, hospedaje, agua y taxi de regreso.
+
+        El ajuste paga **los días que todavía no se habían entregado**: empieza el día
+        siguiente al *último regreso ya pagado* (el del viático original o el del ajuste
+        anterior) y se calcula con las mismas reglas del Excel que el original
+        (`calculos.datos_ajuste` → `calculos.calcular`). Antes las cuentas se hacían a
+        mano y siempre desde el regreso del **original**, así que del segundo ajuste en
+        adelante la fecha de salida quedaba vieja (se volvían a pagar días ya
+        entregados), el hospedaje se cobraba por día en vez de por noche y el **taxi de
+        regreso nunca se pagaba**.
 
         En el ajuste también se puede enviar más efectivo para combustible (o usar el
-        sugerido) y registrar parqueadero/peaje y otros gastos del encargado. Sin
-        taxis ni transporte extra de los acompañantes.
+        sugerido) y registrar parqueadero/peaje y otros gastos del encargado. El taxi de
+        salida no se paga: el viajero ya salió en el viático original.
         """
         orig = db.filas_originales(self.edit_numero)
         if not orig:
             if avisar:
                 C.error(self, "Ajuste", "No se encontró el viático original.")
             return None
-        fr_o = max(_fecha.fromisoformat(r["fecha_regreso"]) for r in orig)
+        fr_o = (db.ultimo_regreso_entregado(self.edit_numero, self.edit_ajuste_numero)
+                or max(_fecha.fromisoformat(r["fecha_regreso"]) for r in orig))
+        inicio = fr_o + timedelta(days=1)
         ndias = (fr - fr_o).days
         if ndias < 1:
             if avisar:
                 C.error(self, "Ajuste",
                         "El regreso del ajuste debe ser al menos 1 día después del "
-                        "regreso original (%s), que es hasta donde ya se entregó viático."
-                        % fr_o.strftime("%d/%m/%Y"))
-                return None
-            ndias = 0
+                        "último día entregado (%s), que es hasta donde ya se pagó "
+                        "viático." % fr_o.strftime("%d/%m/%Y"))
+            return None
+        # La llegada y la salida del trabajo se toman del formulario **si caen dentro del
+        # período del ajuste**; si venían del original (fechas viejas) se acomodan al
+        # primer y al último día. Son las fechas que usa el parámetro «Hospedaje por
+        # fechas» cuando está apagado, y las que se ven en el PDF del ajuste.
+        flt = _fecha_en_rango(base.get("fecha_llegada_trabajo"), inicio, fr, inicio)
+        fst = _fecha_en_rango(base.get("fecha_salida_trabajo"), inicio, fr, fr)
         p = db.cargar_parametros()
-        des = p["valor_desayuno"] * ndias
-        alm = p["valor_almuerzo"] * ndias
-        mer = (p["valor_merienda"] * ndias) if hr >= p["hora_limite_merienda"] else 0.0
-        hos = p["valor_hospedaje"] * ndias
-        agua = p["valor_agua"] * ndias
-        total = round(des + alm + mer + hos + agua, 2)
-        base.update(fecha_salida=(fr_o + timedelta(days=1)).isoformat(),
-                    hora_salida="00:00", ajuste_numero=self.edit_ajuste_numero)
-        # El cajero del ajuste se calcula al final, una sola vez sobre el total del ajuste
-        # (`cajero_del_grupo`), igual que en el viático original.
-        calc = {"dias_viaje": ndias, "desayuno": des, "almuerzo": alm, "merienda": mer,
-                "taxi_salida": 0.0, "taxi_regreso": 0.0, "hospedaje": hos, "agua": agua,
-                "combustible": 0.0, "total": total, "valor_cajero": 0.0}
+        v = datos_ajuste(nombre, base.get("lugar_trabajo", ""), fr_o, fr, hr, flt, fst)
+        calc = calcular(v, p, ajuste=True)
+        # El TAXI DE REGRESO se paga UNA sola vez en todo el viático: el viajero vuelve a
+        # su casa al final, no una vez por cada ampliación. Si el original (o un ajuste
+        # anterior) ya lo pagó, aquí sale en cero y se mantiene el valor ya entregado; si
+        # el original no lo pagó porque volvía temprano y este regreso ya está a la hora
+        # límite, `calculos.calcular` lo trae y aquí sí se paga (`taxi_regreso_pagado`).
+        # El total del ajuste se arma SIN el taxi y el taxi se le suma solo a los
+        # empleados que todavía no lo tienen pagado.
+        ya_pagado = taxi_regreso_pagado(self.edit_numero, self.edit_ajuste_numero)
+        self._taxi_ya_pagado = ya_pagado        # lo usa `_explicar_conceptos`
+        calc["valor_cajero"] = 0.0
+        total = round(calc["total"] - calc["taxi_regreso"], 2)
+        base.update(fecha_salida=inicio.isoformat(), hora_salida="00:00",
+                    fecha_llegada_trabajo=flt.isoformat(),
+                    fecha_salida_trabajo=fst.isoformat(),
+                    ajuste_numero=self.edit_ajuste_numero)
         extra_comb = round(float(efectivo or 0), 2)
         extra_peaje = round(float(peaje or 0), 2)
         extra_otros = round(float(otros or 0), 2)
         # Igual que en el viático original: si no hay chofer (o el chofer no viaja en este
         # viático), el efectivo del combustible y el parqueadero/peaje los lleva el
         # ENCARGADO (antes se perdían en silencio).
-        companeros = [p["nombre"] for p in self.pasajeros]
+        companeros = [x["nombre"] for x in self.pasajeros]
         lleva_gastos = (chofer if chofer and (chofer == nombre or chofer in companeros)
                         else nombre)
 
@@ -1200,12 +1284,15 @@ class ViajeWindow(C.Ventana):
             comb = extra_comb if es_chofer_fila else 0.0
             peaj = extra_peaje if es_chofer_fila else 0.0
             otro = extra_otros if enc else 0.0
-            total_fila = round(total + comb + peaj + otro, 2)
+            # El taxi de regreso va solo al que todavía no lo tiene pagado.
+            txr = 0.0 if (nom or "").strip().upper() in ya_pagado else calc["taxi_regreso"]
+            total_fila = round(total + txr + comb + peaj + otro, 2)
             return {**base, "nombre_empleado": nom, "es_encargado": enc,
                     "es_chofer": es_chofer_fila, "medio_transporte": medio,
                     "extra_transporte": 0.0, "km_recorridos": 0.0,
                     "parqueadero_peaje": peaj, "otros": otro,
-                    **{**calc, "combustible": comb, "total": total_fila}}
+                    **{**calc, "taxi_regreso": txr, "combustible": comb,
+                       "total": total_fila}}
 
         filas = [row(nombre, 1, medio_enc)]
         for pas in self.pasajeros:
@@ -1217,6 +1304,60 @@ class ViajeWindow(C.Ventana):
         return filas
 
     # ---------- vista previa ----------
+    def _cambio_saltr(self):
+        """El usuario cambió la «salida del trabajo»: se respeta lo que escribió.
+
+        En un ajuste esa fecha la pone el sistema (el día del regreso); si se cambia a
+        mano, el sistema deja de moverla.
+        """
+        if not getattr(self, "_fijando_fechas", False):
+            self._saltr_auto = False
+        self._recalcular_horas()
+
+    def _fijar_fechas_ajuste(self):
+        """Acomoda las fechas del formulario al período real del ajuste.
+
+        La **salida de Miempresa de un ajuste no se digita**: el ajuste empieza el día
+        siguiente al *último regreso ya pagado* (el del viático original o el del ajuste
+        anterior) a las 00:00, porque el viajero ya está en el lugar de trabajo. Antes la
+        fecha se quedaba con la del original y del segundo ajuste en adelante salía vieja
+        (se volvían a pagar días ya entregados).
+
+        La llegada y la salida del trabajo se dejan **dentro** del período (venían del
+        original, así que eran fechas de días ya pagados) y, si el regreso quedó antes de
+        donde empieza el ajuste, se propone el día siguiente para que la cuenta se vea.
+        """
+        if getattr(self, "_fijando_fechas", False):
+            return
+        if not (self.edit_numero and self.edit_ajuste_numero):
+            return
+        ultimo = db.ultimo_regreso_entregado(self.edit_numero, self.edit_ajuste_numero)
+        if not ultimo:
+            return
+        inicio = ultimo + timedelta(days=1)
+        self._fijando_fechas = True
+        antes = getattr(self, "_calculando", False)
+        self._calculando = True          # mover fechas no debe reestimar el viaje
+        try:
+            if self.cal_salida.valor() != inicio.isoformat():
+                self.cal_salida.set_valor(inicio.isoformat())
+            texto_fr = self.cal_regreso.valor() or ""
+            if texto_fr <= ultimo.isoformat():
+                # Regreso del original (o vacío): se propone el día siguiente al inicio.
+                self.cal_regreso.set_valor((inicio + timedelta(days=1)).isoformat())
+            fr = _fecha_en_rango(self.cal_regreso.valor(), inicio, _fecha.max, inicio)
+            for caja, por_defecto in ((self.cal_lleg, inicio), (self.cal_saltr, fr)):
+                # La salida del trabajo acompaña al regreso mientras nadie la escriba.
+                mover = _fecha_en_rango(caja.valor(), inicio, fr, None) is None or (
+                    caja is self.cal_saltr and self._saltr_auto)
+                if mover and caja.valor() != por_defecto.isoformat():
+                    caja.set_valor(por_defecto.isoformat())
+                    if caja is self.cal_saltr:
+                        self._saltr_auto = True
+        finally:
+            self._calculando = antes
+            self._fijando_fechas = False
+
     def _refrescar_prev(self):
         """Pinta la vista previa y sugiere el efectivo de combustible.
 
@@ -1225,6 +1366,7 @@ class ViajeWindow(C.Ventana):
         después cada ajuste anterior, después el ajuste que se está digitando y al
         final el **TOTAL GENERAL** de todo lo entregado.
         """
+        self._fijar_fechas_ajuste()
         self._sugerir_combustible()
         nuevos = self._construir_filas() or []
         salida = []
@@ -1255,6 +1397,17 @@ class ViajeWindow(C.Ventana):
             bloque(nuevos)
 
         self.tabla_prev.poner(salida)
+        # Alto a la medida: que se vean todas las filas (original, cada ajuste y el
+        # total general) sin tener que desplazarse dentro de la tabla. Así la vista
+        # previa de un viático con dos ampliaciones se lee de corrido, como el PDF.
+        # (40 px = cabecera + marco de la tabla; con menos sale la barra vertical y,
+        #  al angostarse, también la horizontal, que esconde la columna CAJERO.)
+        filas_vistas = min(max(len(salida), 3), 14)
+        alto = T.px(40 + filas_vistas * 22, 44)
+        self.tabla_prev.setMinimumHeight(alto)
+        # Tampoco más alta que sus filas: si la tarjeta la estira, quedan renglones
+        # vacíos dentro de la tabla (y en el manual, media pantalla en blanco).
+        self.tabla_prev.setMaximumHeight(alto + T.px(8, 4))
         zebra = 0
         for pos, tipo in enumerate(tipos):
             if tipo == "sep":
@@ -1282,9 +1435,27 @@ class ViajeWindow(C.Ventana):
         if not filas:
             return ""
         if self.edit_ajuste_numero:
-            return ("En un AJUSTE solo se pagan los días, las comidas, el hospedaje y el "
-                    "agua: los taxis, el combustible y el parqueadero/peaje van en el "
-                    "viático original.")
+            f = filas[0]
+            p = db.cargar_parametros()
+            avisos = ["En un AJUSTE se pagan los días del %s al %s: comidas, hospedaje "
+                      "(una noche menos que días) y agua, más el taxi de vuelta si no se "
+                      "pagó antes. El taxi de salida, el combustible y el parqueadero/peaje "
+                      "van en el viático original."
+                      % (T.formato_fecha(f.get("fecha_salida")),
+                         T.formato_fecha(f.get("fecha_regreso")))]
+            if abs(float(f.get("taxi_regreso") or 0)) < 0.005:
+                pagados = getattr(self, "_taxi_ya_pagado", None)
+                if pagados is None:
+                    pagados = taxi_regreso_pagado(self.edit_numero, self.edit_ajuste_numero)
+                if (f.get("nombre_empleado") or "").strip().upper() in pagados:
+                    avisos.append("Taxi de regreso $0: ya se pagó en el viático original "
+                                  "(se paga una sola vez, cuando vuelve de verdad)")
+                else:
+                    avisos.append("Taxi de regreso $0: se paga si vuelve a las %s o después "
+                                  "(vuelve a las %s)"
+                                  % (str(p.get("hora_limite_taxi_regreso") or "")[:5] or "—",
+                                     str(f.get("hora_regreso") or "")[:5] or "—"))
+            return "   ·   ".join(avisos)
         f = filas[0]
         p = db.cargar_parametros()
 
@@ -2110,6 +2281,9 @@ class ViajeWindow(C.Ventana):
                              (self.cb_hsaltr, "hora_salida_trabajo")):
             if r0.get(clave):
                 campo.set_valor(r0[clave])
+        # La «salida del trabajo» de un ajuste nuevo la maneja el sistema (acompaña al
+        # regreso); si se está editando un ajuste ya guardado se respeta la que tenía.
+        self._saltr_auto = nuevo_ajuste
         self.edit_numero = numero
         self.edit_ajuste_numero = ajuste_numero
         self._actualizar_numero()

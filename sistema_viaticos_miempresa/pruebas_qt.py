@@ -138,7 +138,7 @@ def main():
         revisar("Usuarios: en la base no queda ninguna clave legible",
                 all(db.es_clave_cifrada(c) for c in claves), "%d claves" % len(claves))
         revisar("Ingreso: la clave de fábrica de una vendedora funciona",
-                (db.login("VENDEDOR1", "1234") or {}).get("rol") == db.ROL_VENDEDOR)
+                (db.login("TATIANA", "1234") or {}).get("rol") == db.ROL_VENDEDOR)
         revisar("Ingreso: la clave del superusuario funciona y la errada no",
                 (db.login("MIEMPRESA", "miempresa") or {}).get("rol") == db.ROL_SUPER
                 and db.login("MIEMPRESA", "clave-mala") is None)
@@ -217,14 +217,14 @@ def main():
 
         # --- memoria temporal: que nadie pierda lo que estaba llenando ---
         revisar("Memoria temporal: lo que se deja a medias se guarda y se vuelve a leer",
-                db.guardar_borrador("VENDEDOR1", {"encargado": "PERSONAL DE EJEMPLO UNO",
+                db.guardar_borrador("TATIANA", {"encargado": "PEÑA MAYRA TATIANA",
                                                 "km": "215"})
-                and ((db.leer_borrador("VENDEDOR1") or {}).get("datos")
+                and ((db.leer_borrador("TATIANA") or {}).get("datos")
                      or {}).get("km") == "215"
-                and [b["usuario"] for b in db.usuarios_con_borrador()] == ["VENDEDOR1"],
+                and [b["usuario"] for b in db.usuarios_con_borrador()] == ["TATIANA"],
                 db.usuarios_con_borrador())
         revisar("Memoria temporal: al guardar el viático el borrador se borra",
-                db.borrar_borrador("VENDEDOR1") == 1 and db.leer_borrador("VENDEDOR1") is None)
+                db.borrar_borrador("TATIANA") == 1 and db.leer_borrador("TATIANA") is None)
         with bd.conectar() as c:
             c.execute("INSERT INTO borradores(usuario, pantalla, datos, actualizado_el) "
                       "VALUES (?,?,?,?)", ("VIEJO", "viatico", "{}", "2026-01-01 08:00:00"))
@@ -289,15 +289,15 @@ def main():
     original = q_login.pedir_sesion
     try:
         q_login.pedir_sesion = lambda *a, **k: (pedidos.append(k.get("roles")),
-                                               ({"usuario": "VENDEDOR1",
-                                                 "nombre": "PERSONAL DE EJEMPLO UNO",
+                                               ({"usuario": "TATIANA",
+                                                 "nombre": "PEÑA",
                                                  "rol": db.ROL_VENDEDOR}, False))[1]
         revisar("Menú: una vendedora abre Parámetros con su propia clave",
                 menu.autorizar("admin") is True and pedidos
                 and pedidos[-1] == (db.ROL_VENDEDOR, db.ROL_JUSTIFICA, db.ROL_SUPER),
                 pedidos[-1] if pedidos else None)
         revisar("Menú: la sesión del área queda puesta en el menú",
-                menu.usuario.get("usuario") == "VENDEDOR1" and menu.es_super is False)
+                menu.usuario.get("usuario") == "TATIANA" and menu.es_super is False)
         menu.olvidar_sesion()
         revisar("Menú: «olvidar la clave» deja el menú sin sesión",
                 menu.usuario.get("usuario") == "" and menu._sesion_guardada is None)
@@ -306,7 +306,7 @@ def main():
                 menu.autorizar("viaje") is False)
         # Con «no volver a pedir la clave» no se vuelve a preguntar dentro del mismo rol.
         menu2 = q_menu.MenuPrincipal()
-        q_login.pedir_sesion = lambda *a, **k: ({"usuario": "VENDEDOR1", "nombre": "PERSONAL DE EJEMPLO UNO",
+        q_login.pedir_sesion = lambda *a, **k: ({"usuario": "TATIANA", "nombre": "PEÑA",
                                                  "rol": db.ROL_VENDEDOR}, True)
         menu2.autorizar("viaje")
         pedidos2 = []
@@ -324,7 +324,7 @@ def main():
     # --- memoria temporal: la ventana de viáticos guarda y devuelve lo que se escribió ---
     # (Es lo que pasa cuando alguien cierra el sistema por error a mitad de la captura.)
     import q_viaje
-    vendedora = {"usuario": "VENDEDOR1", "nombre": "PERSONAL DE EJEMPLO UNO",
+    vendedora = {"usuario": "TATIANA", "nombre": "PEÑA FERNANDEZ MAYRA TATIANA",
                  "rol": db.ROL_VENDEDOR}
     empleados = db.listar_empleados()
     ventana = q_viaje.ViajeWindow(None, vendedora)
@@ -346,7 +346,7 @@ def main():
             "%s · %s km · %d acompañante(s)"
             % (otra.cb_encargado.valor(), otra.txt_km.text(), len(otra.pasajeros)))
     revisar("Memoria temporal: solo el dueño la recupera (otro usuario no ve nada)",
-            db.leer_borrador({"usuario": "VENDEDOR4"}) is None)
+            db.leer_borrador({"usuario": "MARTINA"}) is None)
     otra.limpiar()
     revisar("Memoria temporal: al limpiar el formulario el borrador se borra",
             db.leer_borrador(vendedora) is None)

@@ -255,11 +255,11 @@ Volvió el control de acceso, ahora sí con usuarios reales:
 
 | Usuario | Clave | Rol | Para qué |
 | --- | --- | --- | --- |
-| VENDEDOR1 | 1234 | VENDEDOR(A) | crea viáticos, ajustes y todo lo demás |
-| VENDEDOR2 | 1234 | VENDEDOR(A) | igual |
-| VENDEDOR3 | 1234 | VENDEDOR(A) | igual |
-| VENDEDOR4 | 1234 | VENDEDOR(A) | igual |
-| JUSTIFICA1 | 1234 | JUSTIFICACIÓN | justifica viáticos (también puede todo lo demás) |
+| TATIANA | 1234 | VENDEDOR(A) | crea viáticos, ajustes y todo lo demás |
+| CRISTINA | 1234 | VENDEDOR(A) | igual |
+| MIRIAM | 1234 | VENDEDOR(A) | igual |
+| MARTINA | 1234 | VENDEDOR(A) | igual |
+| PAOLA NARANJO | 1234 | JUSTIFICACIÓN | justifica viáticos (también puede todo lo demás) |
 | **MIEMPRESA** | *reservada* | SUPERUSUARIO | informe de actividad y alta de usuarios |
 
 Reglas:
@@ -272,7 +272,7 @@ Reglas:
   cada pantalla y queda escrito automáticamente en **«Creado por»** (viáticos) y
   **«Elaborado por»** (justificación).
 - El usuario se escribe sin importar mayúsculas y también se acepta el primer nombre
-  (por ejemplo `JUSTIFICA1` entra como `PERSONAL DE EJEMPLO CINCO`).
+  (por ejemplo `PAOLA` entra como `PAOLA NARANJO`).
 - Los usuarios antiguos `admin` y `justifica` se eliminan solos al migrar la base.
 
 ### Ingreso por área y claves cifradas (entrega actual)
@@ -401,8 +401,10 @@ Antes el ajuste solo calculaba días adicionales (comidas, hospedaje y agua). Ah
 - Al **empezar un ajuste nuevo** esos tres campos arrancan en cero, porque lo del
   original ya se entregó; al **editar un ajuste guardado** se recuperan sus propios
   valores.
-- Se mantiene lo demás del ajuste: sin taxis y sin extra de transporte para los
-  acompañantes.
+- Lo demás del ajuste se calcula con las **mismas reglas del viático original**, sobre
+  los días nuevos: comidas, agua, hospedaje por noche y **taxi de regreso** si vuelve a
+  la hora límite. El **taxi de salida** y el transporte extra de los acompañantes no se
+  pagan (eso es propio del original).
 
 ## 9. Explicación del valor de una factura (justificación)
 
@@ -532,25 +534,25 @@ de encabezados y toman la columna **Nombre** (personal) o **Cliente** (clientes)
 importar cuántas columnas tenga el archivo ni las filas de título que traiga arriba.
 Si el Excel es una lista simple de una sola columna, sigue funcionando como antes.
 
-- Personal se carga desde un listado de personal en Excel → toma la columna **Nombre**.
-- Clientes se carga desde la lista de clientes en Excel tomando **solo el nombre**
-  (no se importan RUC, ciudad, contacto ni grupo).
+- Personal se carga con `LISTADO PERSONAL MIEMPRESA ...xlsx` → **31 empleados**.
+- Clientes se carga con `LISTA DE CLIENTES MIEMPRESA.xlsx` tomando **solo el nombre**
+  (no se importan RUC, ciudad, contacto ni grupo) → **755 clientes**.
 - Los dos importadores **no duplican**: si se vuelve a importar el mismo archivo, informa
   que no hay nuevos.
 
 ### Nombres completos de los usuarios
 
-Para entrar se sigue escribiendo el **usuario corto** (en la plantilla: **VENDEDOR1,
-VENDEDOR2, VENDEDOR3, VENDEDOR4, JUSTIFICA1**), pero el nombre que firma los documentos
-es el **nombre completo del listado de personal**:
+Para entrar se sigue escribiendo igual (**TATIANA, CRISTINA, MIRIAM, MARTINA,
+PAOLA NARANJO**), pero el nombre que firma los documentos es el **nombre completo del
+listado de personal**:
 
 | Usuario (para entrar) | Nombre en «Creado por» / «Elaborado por» |
 | --- | --- |
-| VENDEDOR1 | PERSONAL DE EJEMPLO UNO |
-| VENDEDOR2 | PERSONAL DE EJEMPLO DOS |
-| VENDEDOR3 | PERSONAL DE EJEMPLO TRES |
-| VENDEDOR4 | PERSONAL DE EJEMPLO CUATRO |
-| JUSTIFICA1 | PERSONAL DE EJEMPLO CINCO |
+| TATIANA | PEÑA FERNANDEZ MAYRA TATIANA |
+| CRISTINA | CASTILLO RIOFRIO IVETTE CRISTINA |
+| MIRIAM | LOPEZ ROSALES MIRIAM ANGELA |
+| MARTINA | JARAMILLO BORJA MARTINA MARIA |
+| PAOLA NARANJO | NARANJO GONZALEZ MIRIAM PAOLA |
 
 El cambio se aplica solo si el usuario todavía tiene el nombre corto, así no pisa un
 nombre cambiado a mano desde «👥 Usuarios del sistema».
@@ -624,7 +626,7 @@ PostgreSQL.
 ### Una computadora nueva solo necesita el `.exe`
 
 `configuracion.DEFECTO` ahora apunta **de fábrica** a la base central
-(`192.168.1.179`, puerto `5432`, base `viaticos`, usuario `miempresa`, clave
+(`192.168.22.179`, puerto `5432`, base `viaticos`, usuario `miempresa`, clave
 `miempresa`, respaldos guardados **dentro de la base**). Por eso una computadora
 que solo lleva `Sistema_Viaticos.exe` funciona **sin copiar ningún archivo extra**.
 

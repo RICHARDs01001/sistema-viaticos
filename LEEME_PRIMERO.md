@@ -15,9 +15,9 @@
 | **`sistema_viaticos_miempresa\`** | **El programa**: código, `INICIAR.bat`, **`EMPAQUETAR_EXE_SERVIDOR.bat`** (el único empaquetador), la carpeta `data` (base local de este equipo), `excel\` (listas de personal y clientes para importar) y `documentacion\capturas\` (imágenes de las pantallas). | En el equipo donde se programa y en el que se generan los `.exe`. |
 | **`herramientas\`** | Utilidades que **no** son parte del programa: `limpiar_y_firmar.py` (firma del autor y limpieza), `tiempos_de_viaje.py` (horas de viaje de los cantones, medidas con la ruta real de OpenStreetMap), `generar_excel_tiempos.py` (arma el Excel **TIEMPOS DE VIAJE MIEMPRESA.xlsx** con las horas y los km), `preparar_distancias_doc.py` (pasa el Word **DISTANCIAS DOC.docx** —los km revisados cantón por cantón, con el tiempo en auto y en autobús— al formato del sistema, con **una hora por cantón** y los Excel y `.sql` listos para cargar), `preparar_distancias_excel.py` (lo mismo cuando la fuente es un Excel de la empresa), `ver_excel.py` (mirar un Excel), `comparar_excel_viaticos.py` y `comparar_reglas_excel.py` (cargar el Excel real de viáticos y comparar valores). | Cuando haga falta. |
 | `herramientas\excels_de_trabajo\` | Los Excel de trabajo (viáticos y órdenes de producción). Están fuera del programa a propósito. | Para consultar o volver a correr las comparaciones. |
-| `herramientas\prueba_excel\data\viaticos.db` | Base **de prueba**: los viáticos del Excel cargados por `comparar_excel_viaticos.py`. | Para revisar esa comparación dentro del sistema. **No** es la base de trabajo. |
+| `herramientas\prueba_excel\data\viaticos.db` | Base **de prueba**: los 113 viáticos del Excel cargados por `comparar_excel_viaticos.py`. | Para revisar esa comparación dentro del sistema. **No** es la base de trabajo. |
 | `dist\Sistema_Viaticos.exe` | **El programa terminado.** Se crea al ejecutar `EMPAQUETAR_EXE_SERVIDOR.bat`; es lo único que se copia a las demás computadoras. | Cada computadora de trabajo. |
-| **`documentacion\`** | Todas las guías en un solo lugar (ver abajo). | Cuando se tenga una duda. |
+| **`documentacion\`** | Todas las guías en un solo lugar (ver abajo). El **manual de usuario** está también en **PDF** (`MANUAL_DE_USUARIO.pdf`), con índice y cuadros, para leerlo o imprimirlo sin el editor. | Cuando se tenga una duda. |
 | `sistema_viaticos_miempresa\data\` | La base de datos local (SQLite) y los PDF de respaldos de **este** equipo. | Solo en este equipo. **No borrar.** |
 
 ## 🚀 La primera vez que se abre en una computadora
@@ -205,6 +205,8 @@ las **mismas funciones**; lo que se imprime no cambió. Novedades de esta entreg
 
 | Archivo | Para qué sirve |
 | --- | --- |
+| `documentacion\MANUAL_DE_USUARIO.md` | **Manual de usuario**: paso a paso de cada pantalla, con las capturas numeradas de `documentacion\manual\img`. |
+| `documentacion\ACTUALIZACION_por_github.md` | Cómo se publica una versión y cómo se actualiza cada computadora (`PUBLICAR_VERSION.bat` / `ACTUALIZAR_DESDE_GITHUB.bat`). |
 | `documentacion\GUIA_DEL_SISTEMA.md` | Todo lo que hace el sistema: pantallas, viáticos, ajustes, justificación, respaldos, usuarios, numeración, reportes y base central. |
 | `documentacion\HISTORIAL_DE_CAMBIOS.md` | **Historial** de cómo se fue construyendo el sistema (versión por versión). Es de consulta, no hace falta leerlo para usarlo. |
 | `documentacion\INFORME_TECNICO_Y_COSTOS.md` | Informe técnico y estimación de costos/horas del desarrollo. |
@@ -233,7 +235,7 @@ las **mismas funciones**; lo que se imprime no cambió. Novedades de esta entreg
 **En la computadora que tendrá la base de datos (el servidor):**
 
 ```
-cd C:\MIEMPRESA_VIATICOS\servidor
+cd C:\Users\richi\Desktop\MIEMPRESA_VIATICOS\servidor
 Start-Service postgresql-x64-<V>            (enciende la base; comprobar con: Get-Service postgresql*)
 ipconfig                        (copiar la "Dirección IPv4" del adaptador en uso)
 ```
@@ -257,8 +259,8 @@ y ábralo. Si todo está bien, la pantalla de ingreso dirá **· BASE CENTRAL**.
 
 | Usuario | Clave | Qué puede hacer |
 | --- | --- | --- |
-| VENDEDOR1 · VENDEDOR2 · VENDEDOR3 · VENDEDOR4 | `1234` | Crear, revisar, ajustar y justificar viáticos (vendedoras) |
-| JUSTIFICA1 | `1234` | Justificar viáticos |
+| TATIANA · CRISTINA · MIRIAM · MARTINA | `1234` | Crear, revisar, ajustar y justificar viáticos (vendedoras) |
+| PAOLA NARANJO | `1234` | Justificar viáticos |
 | **MIEMPRESA** | `miempresa` | **Superusuario**: informe de actividad (auditoría), usuarios, conexión a la base y numeración de viáticos. **No aparece en ninguna lista** |
 
 Las claves se pueden cambiar desde **👥 USUARIOS DEL SISTEMA** (solo el superusuario) y quedan
@@ -276,21 +278,27 @@ python herramientas\comparar_excel_viaticos.py    &REM Excel histórico (una hoj
 python herramientas\comparar_reglas_excel.py      &REM formato nuevo semanal (reglas contra reglas)
 ```
 
-Resultados que se pueden esperar de una corrida (el informe concreto queda **fuera del
-repositorio**, porque lleva los datos reales de la empresa):
+Resultados de la última corrida (informes completos en `documentacion\`):
 
-- **Los gastos respaldados coinciden al centavo** entre el Excel de la empresa y el
-  programa: los dos lados aplican **las mismas tarifas y las mismas horas límite**.
-- Las diferencias que aparecen son de **captura en el Excel** (filas escritas a mano), no
-  de reglas: combustible por km con otro valor, filas de «Días de Viaje» en blanco,
-  comidas y agua, taxis y el «Transporte» que el programa no paga (va en **otros
-  gastos**). Parqueadero/peaje y hospedaje coinciden.
+- `PRUEBA_EXCEL_VIATICOS.md` — **113 viáticos** del Excel histórico (129 hojas): los **gastos
+  respaldados siguen coincidiendo al centavo** ($32.159,21 en los dos). El «valor entregado» del Excel
+  es $20.375,45 contra $11.170,00 del programa (diferencia $9.205,45), porque ese Excel **pagaba las
+  facturas reales** y el programa paga por reglas; con **solo viáticos** (sin las facturas de la
+  justificación) esos mismos viajes costarían **$5.730,00** y las facturas le suman **$5.440,00**.
+- `COMPARACION_REGLAS_NUEVO_EXCEL.md` — **80 filas** del formato nuevo: **42 coinciden exacto** y 38
+  tienen alguna diferencia, que ya quedó en **$400,25** en el total ($4.821,00 del formato nuevo
+  contra $5.221,25 del programa). Las **reglas de los dos lados son las mismas** —tarifas y horas
+  límite coinciden— y lo que queda son **datos escritos a mano en el Excel**: el combustible a $0,10
+  por km en 11 filas (−$461,75, cuando el parámetro dice $0,25), comidas y agua (−$84,00, con filas de
+  «Días de Viaje» en blanco que dan números negativos), taxis (−$6,00 en 6 filas) y el «Transporte»
+  ($151,50 en 7 filas) que el programa no paga (va en **otros gastos**). Parqueadero/peaje y hospedaje
+  coinciden en las 80 filas.
 
-> Antes de cambiar nada en producción: confirme con la empresa la **tarifa por km**, que
-> las comidas, el agua y los días se **calculen con las fechas** (no a mano) y que el
-> **transporte** y el parqueadero/peaje de cada viaje se registren en el sistema (el
-> transporte va en «otros gastos»). La hora de la merienda y el redondeo del cajero se
-> cambian en **Parámetros** sin tocar el programa.
+> Antes de cambiar nada en producción: confirme con la empresa la **tarifa por km** ($0,10 o $0,25),
+> que las comidas, el agua y los días se **calculen con las fechas** (no a mano) y que el **transporte**
+> y el parqueadero/peaje de cada viaje se registren en el sistema (el transporte va en «otros gastos»).
+> La hora de la merienda (21:00) y el redondeo del cajero ($5) se cambian en **Parámetros** sin tocar
+> el programa.
 
 ---
 

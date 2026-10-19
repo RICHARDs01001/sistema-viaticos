@@ -8,8 +8,25 @@
 """calculos.py — Reglas de cálculo idénticas al Excel oficial."""
 import math
 from dataclasses import dataclass
-from datetime import date, time
+from datetime import date, datetime, time, timedelta
 from typing import Optional
+
+# Horas límite de fábrica (las mismas de `database.PARAMS_INICIALES`). Se usan cuando
+# el parámetro viene vacío, mal escrito o la base es vieja. **No** se puede caer en
+# `00:00`: con una hora límite en cero las dos reglas del taxi se invierten (el de
+# regreso se paga siempre y el de salida no se paga nunca).
+HORAS_DE_FABRICA = {
+    "hora_limite_desayuno": time(6, 0),
+    "hora_limite_almuerzo": time(13, 0),
+    "hora_limite_merienda": time(21, 0),
+    "hora_limite_taxi_salida": time(6, 0),
+    "hora_limite_taxi_regreso": time(21, 0),
+}
+
+# Un regreso «de madrugada» es antes de esta hora del día (00:00–06:00). Es fija y no
+# depende de la hora límite del taxi de salida: si esa se cambia (por ejemplo a las
+# 09:00), el que vuelve a las 08:30 no se vuelve «madrugada».
+HORA_FIN_MADRUGADA = time(6, 0)
 
 
 @dataclass
@@ -28,6 +45,11 @@ class DatosViaje:
     parqueadero_peaje: float = 0.0
     otros: float = 0.0
     combustible_efectivo: float = 0.0   # si >0, se usa en lugar de km*tarifa
+    # Solo en los **ajustes**: el último día ya entregado (el regreso del original o del
+    # ajuste anterior). La noche de ese día todavía **no** se pagó, así que el hospedaje
+    # del ajuste se cuenta desde ahí y no desde el día siguiente. Con None se cuenta como
+    # en el Excel (noches entre la salida y el regreso del propio período).
+    noches_desde: Optional[date] = None
 
 
 def redondear_cajero(total, multiplo):
@@ -39,7 +61,9 @@ def redondear_cajero(total, multiplo):
     """
     if not multiplo or multiplo <= 0:
         return round(total, 2)
-    return math.ceil(total / multiplo - 1e-9) * multiplo
+    # El `round` final quita el ruido del punto flotante (55.00000000000001, 1234.6 + 1e-13):
+    # el dinero se guarda y se muestra con dos decimales.
+    return round(math.ceil(total / multiplo - 1e-9) * multiplo, 2)
 
 
 def dias_de_viaje(v: "DatosViaje") -> int:
@@ -51,12 +75,26 @@ def dias_de_viaje(v: "DatosViaje") -> int:
 
 
 def hora_limite(valor, por_defecto=time(0, 0)) -> time:
-    """Hora límite escrita en los parámetros (HH:MM, como texto o como hora)."""
+    """Hora límite escrita en los parámetros (HH:MM, como texto o como hora).
+
+    Acepta lo que puede llegar de una base o de un archivo: una hora ya convertida
+    (`time`), un `datetime`, `"06:00"`, `"6:00"`, `"06:00:00"` (así la devuelve
+    PostgreSQL y así se escribe en Excel) y hasta un número (`21` o `21.5`). Si no se
+    entiende devuelve `por_defecto`; por eso quien la llama **debe** pasar la hora de
+    fábrica del parámetro (`HORAS_DE_FABRICA`) y nunca dejar el cero de `00:00`, que
+    invertiría las reglas del taxi.
+    """
     if isinstance(valor, time):
         return valor
+    if isinstance(valor, datetime):
+        return valor.time()
     try:
-        h, m = str(valor).split(":")
-        return time(int(h), int(m))
+        partes = [x for x in str(valor).strip().replace(".", ":").split(":") if x.strip()]
+        if not partes:
+            return por_defecto
+        h = int(partes[0])
+        m = int(partes[1]) if len(partes) > 1 else 0
+        return time(h, m)
     except Exception:
         return por_defecto
 
@@ -175,7 +213,8 @@ def comida_dias(v: "DatosViaje", p: dict, clave_valor: str, clave_limite: str,
     if not valor:
         return 0.0
     total = valor * (dias_de_viaje(v) - 1)
-    limite = hora_limite(p.get(clave_limite))
+    limite = hora_limite(p.get(clave_limite),
+                         HORAS_DE_FABRICA.get(clave_limite, time(0, 0)))
     if extremo == "salida":
         if v.hora_salida <= limite:
             total += valor
@@ -199,33 +238,92 @@ def noches_de_hospedaje(v: "DatosViaje", p: Optional[dict] = None) -> int:
     return max((v.fecha_regreso - v.fecha_salida).days, 0)
 
 
-def calcular(v: DatosViaje, p: dict) -> dict:
-    """Valores del viático con las mismas reglas del Excel oficial de la empresa."""
+def datos_ajuste(nombre_empleado: str, lugar_trabajo: str, ultimo_regreso: date,
+                 fecha_regreso: date, hora_regreso: time,
+                 fecha_llegada_trabajo: Optional[date] = None,
+                 fecha_salida_trabajo: Optional[date] = None) -> DatosViaje:
+    """`DatosViaje` del período que cubre un **ajuste** de viático.
+
+    Un ajuste paga los días que todavía no se habían entregado. Empieza el día
+    siguiente al **último regreso ya pagado** (`ultimo_regreso`: el del viático original
+    o el del ajuste anterior) a las 00:00, y termina en la fecha y hora de regreso que
+    se escriban. Con esas fechas el ajuste se calcula con las **mismas reglas del Excel
+    que el original**: días de calendario, `días - 1` comidas más la del extremo,
+    hospedaje por noches entre las dos fechas, agua por día y taxi de regreso según la
+    hora de llegada.
+
+    La salida a las 00:00 es solo la marca de dónde empieza el período: en un ajuste el
+    viajero **ya está** en el lugar de trabajo, por eso `calcular(..., ajuste=True)` no
+    paga el taxi de salida (se pagó en el viático original).
+
+    El hospedaje se cuenta desde `ultimo_regreso` (`noches_desde`), no desde el día
+    siguiente: la **noche** del último día entregado no la pagó el viático original
+    (que pagó las noches hasta la anterior). Así el original más todos los ajustes pagan
+    exactamente las noches que hubo entre la primera salida y el último regreso.
+    """
+    inicio = ultimo_regreso + timedelta(days=1)
+    return DatosViaje(
+        nombre_empleado=nombre_empleado, lugar_trabajo=lugar_trabajo,
+        fecha_salida=inicio, hora_salida=time(0, 0),
+        fecha_regreso=fecha_regreso, hora_regreso=hora_regreso,
+        fecha_llegada_trabajo=fecha_llegada_trabajo or inicio,
+        fecha_salida_trabajo=fecha_salida_trabajo or fecha_regreso,
+        km_recorridos=0.0, parqueadero_peaje=0.0, otros=0.0,
+        combustible_efectivo=0.0, noches_desde=ultimo_regreso)
+
+
+def calcular(v: DatosViaje, p: dict, ajuste: bool = False) -> dict:
+    """Valores del viático con las mismas reglas del Excel oficial de la empresa.
+
+    Con `ajuste=True` (días adicionales de un viático que se alargó) **no** se paga el
+    taxi de salida: el viajero ya salió en el viático original y el viaje del ajuste
+    empieza a las 00:00 del día siguiente al último regreso entregado, sin traslado.
+
+    Las horas límite que falten o no se entiendan toman su valor de fábrica
+    (`HORAS_DE_FABRICA`), nunca `00:00`: con una hora límite en cero el taxi de regreso
+    se pagaría en todos los viáticos y el de salida en ninguno.
+    """
     dias = dias_de_viaje(v)
     desayuno = comida_dias(v, p, "valor_desayuno", "hora_limite_desayuno", "salida")
     almuerzo = comida_dias(v, p, "valor_almuerzo", "hora_limite_almuerzo", "regreso")
     merienda = comida_dias(v, p, "valor_merienda", "hora_limite_merienda", "regreso")
-    # Taxi al SALIR: si el viaje empieza a la hora límite (06:00) o antes.
+    # Taxi al SALIR: si el viaje empieza a la hora límite (06:00) o antes. `taxi_salida`
+    # se paga una sola vez por período: en un ajuste el viajero ya salió en el original.
+    limite_taxi_salida = hora_limite(
+        p.get("hora_limite_taxi_salida"), HORAS_DE_FABRICA["hora_limite_taxi_salida"])
+    limite_taxi_regreso = hora_limite(
+        p.get("hora_limite_taxi_regreso"), HORAS_DE_FABRICA["hora_limite_taxi_regreso"])
     taxi_salida = (_numero(p.get("valor_taxi_salida"))
-                   if v.hora_salida <= hora_limite(p.get("hora_limite_taxi_salida")) else 0.0)
+                   if v.hora_salida <= limite_taxi_salida else 0.0)
+    if ajuste:
+        taxi_salida = 0.0
     # Taxi al VOLVER: si se termina a la hora límite (21:00) o después, como el Excel.
     # Si el superusuario activa «Taxi de regreso de madrugada» también se paga al que
-    # vuelve antes de la hora límite de la mañana (regresos a las 03:00), que el Excel
-    # no contempla.
+    # vuelve antes de las 06:00 (lo que el Excel no contempla). Una ida y vuelta en la
+    # misma madrugada (sale 04:00 y vuelve 05:30) **no** es «volver de madrugada»: es el
+    # mismo traslado, y el taxi de salida ya se pagó. En un ajuste la salida es a las
+    # 00:00 (la marca de dónde empieza el período), así que ahí sí se paga.
+    salio_de_madrugada = (v.fecha_regreso == v.fecha_salida
+                          and time(0, 0) < v.hora_salida <= HORA_FIN_MADRUGADA)
+    vuelve_de_madrugada = (v.hora_regreso <= HORA_FIN_MADRUGADA
+                           and not salio_de_madrugada)
     taxi_regreso = 0.0
-    if (v.hora_regreso >= hora_limite(p.get("hora_limite_taxi_regreso"))
-            or (_activado(p, "taxi_regreso_madrugada", 0)
-                and v.hora_regreso <= hora_limite(p.get("hora_limite_taxi_salida")))):
+    if (v.hora_regreso >= limite_taxi_regreso
+            or (_activado(p, "taxi_regreso_madrugada", 0) and vuelve_de_madrugada)):
         taxi_regreso = _numero(p.get("valor_taxi_regreso"))
-    noches = noches_de_hospedaje(v, p)
+    noches = (max((v.fecha_regreso - v.noches_desde).days, 0)
+              if v.noches_desde is not None else noches_de_hospedaje(v, p))
     hospedaje = _numero(p.get("valor_hospedaje")) * noches
     agua = _numero(p.get("valor_agua")) * dias
-    if v.combustible_efectivo > 0:
-        combustible = round(v.combustible_efectivo, 2)
+    # Los gastos pueden venir como texto de una base o de un Excel viejo: se leen igual.
+    if _numero(v.combustible_efectivo) > 0:
+        combustible = round(_numero(v.combustible_efectivo), 2)
     else:
-        combustible = round(v.km_recorridos * _numero(p.get("valor_combustible_km")), 2)
+        combustible = round(_numero(v.km_recorridos) *
+                            _numero(p.get("valor_combustible_km")), 2)
     total = round(desayuno + almuerzo + merienda + taxi_salida + taxi_regreso +
-                  hospedaje + agua + combustible + v.parqueadero_peaje + v.otros, 2)
+                  hospedaje + agua + combustible + _numero(v.parqueadero_peaje) +
+                  _numero(v.otros), 2)
     return {
         "dias_viaje": dias, "desayuno": desayuno, "almuerzo": almuerzo,
         "merienda": merienda, "taxi_salida": taxi_salida, "taxi_regreso": taxi_regreso,

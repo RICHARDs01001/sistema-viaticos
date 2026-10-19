@@ -21,10 +21,10 @@ Se llama desde EMPAQUETAR_EXE_SERVIDOR.bat (o a mano). Hace tres cosas:
      `dist\\config.json`, el script avisa y con --limpiar-config lo borra.
 
 Uso:
-    python empaquetar_servidor.py 192.168.1.123 5432                    empaqueta
-    python empaquetar_servidor.py 192.168.1.123 5432 --sin-fabrica      no toca configuracion.py
-    python empaquetar_servidor.py 192.168.1.123 5432 --solo-config      NO empaqueta: solo el config.json
-    python empaquetar_servidor.py 192.168.1.123 5432 --simular          solo muestra lo que haría
+    python empaquetar_servidor.py 192.168.22.123 5432                    empaqueta
+    python empaquetar_servidor.py 192.168.22.123 5432 --sin-fabrica      no toca configuracion.py
+    python empaquetar_servidor.py 192.168.22.123 5432 --solo-config      NO empaqueta: solo el config.json
+    python empaquetar_servidor.py 192.168.22.123 5432 --simular          solo muestra lo que haría
 
 Opciones: --clave · --usuario · --base · --dist <carpeta> · --forzar
     --forzar  permite una IP terminada en .1 (que normalmente es el router).
@@ -133,7 +133,7 @@ def empaquetar(simular):
 
 def main():
     p = argparse.ArgumentParser(description="Empaqueta el .exe apuntando al servidor nuevo.")
-    p.add_argument("ip", nargs="?", help="IP del servidor (ej. 192.168.1.123)")
+    p.add_argument("ip", nargs="?", help="IP del servidor (ej. 192.168.22.123)")
     p.add_argument("puerto", nargs="?", type=int, default=5432, help="puerto (por defecto 5432)")
     p.add_argument("--clave", default="miempresa")
     p.add_argument("--usuario", default="miempresa")
@@ -153,7 +153,7 @@ def main():
     if not ip and sys.stdin is not None and sys.stdin.isatty():
         ip = input("IP del servidor: ").strip()
     if not ip_valida(ip):
-        print("*** La IP '%s' no es válida (un ejemplo correcto: 192.168.1.123)" % ip)
+        print("*** La IP '%s' no es válida (un ejemplo correcto: 192.168.22.123)" % ip)
         return 1
     if not 1 <= a.puerto <= 65535:
         print("*** El puerto %s no es válido" % a.puerto)

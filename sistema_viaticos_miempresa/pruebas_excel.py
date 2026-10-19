@@ -6,7 +6,15 @@
 #  Prohibida su copia, reproducción o distribución sin autorización escrita.
 # =====================================================================
 # -*- coding: utf-8 -*-
-"""PRUEBA REAL: compara cada viaje del Excel de viáticos con lo que calcula el sistema."""
+"""PRUEBA REAL: compara cada viaje del Excel de viáticos con lo que calcula el sistema.
+
+Ojo con lo que compara: va contra **lo que está escrito en las celdas** del Excel, y en
+ese archivo hay celdas calculadas por fórmula y celdas que la empresa **sobrescribió a
+mano** (km con otra tarifa, comidas o taxis elegidos a mano). Por eso casi todos los
+viajes salen «con diferencias»: la comparación **regla contra regla** —las fórmulas del
+Excel contra `calculos.py`— es `pruebas_reglas.py`, y esa da **0 diferencias**. Este
+informe sirve para ver, fila por fila, dónde el Excel se apartó de su propia fórmula.
+"""
 import io
 import os
 import sys

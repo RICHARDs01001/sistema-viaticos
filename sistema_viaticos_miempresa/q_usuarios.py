@@ -16,7 +16,7 @@ from PySide6.QtWidgets import QHBoxLayout
 import database as db
 import qt_comunes as C
 
-ROLES_UI = [("VENDEDOR(A)", db.ROL_VENDEDOR), ("JUSTIFICACIÓN", db.ROL_JUSTIFICA)]
+ROLES_UI = [("EMPLEADO(A)", db.ROL_VENDEDOR), ("JUSTIFICACIÓN", db.ROL_JUSTIFICA)]
 ROLES_DICT = dict(ROLES_UI)
 ROLES_INV = {v: k for k, v in ROLES_UI}
 
@@ -84,7 +84,7 @@ class UsuariosWindow(C.Ventana):
     def _refrescar(self):
         """Vuelve a leer la lista de usuarios."""
         try:
-            usuarios = db.listar_usuarios()
+            usuarios = db.listar_usuarios(incluir_super=True)
         except Exception as ex:
             C.error(self, "Usuarios", "No se pudo leer la lista de usuarios:\n\n%s" % ex)
             usuarios = []
@@ -114,15 +114,33 @@ class UsuariosWindow(C.Ventana):
         # significa «no cambiarla» al guardar.
         self.txt_clave.clear()
         self.txt_clave.setPlaceholderText("Nueva clave (vacío = no cambiar)")
-        C.poner_combo(self.cb_rol, ROLES_INV.get(actual.get("rol"), ROLES_UI[0][0]))
-        self.lbl_estado.setText("Editando: %s · deje la clave vacía para no cambiarla"
-                                % self.sel_usuario)
+        es_super = actual.get("rol") == db.ROL_SUPER
+        self._bloquear_datos(es_super)
+        if es_super:
+            C.poner_combo(self.cb_rol, "SUPERUSUARIO")
+            self.lbl_estado.setText("Superusuario: escriba la clave nueva y use "
+                                    "«Guardar cambios» (lo demás no se cambia)")
+        else:
+            C.poner_combo(self.cb_rol, ROLES_INV.get(actual.get("rol"), ROLES_UI[0][0]))
+            self.lbl_estado.setText("Editando: %s · deje la clave vacía para no cambiarla"
+                                    % self.sel_usuario)
+
+    def _bloquear_datos(self, bloquear):
+        """Bloquea usuario, nombre y rol cuando lo que se edita es el superusuario.
+
+        Del superusuario solo se puede cambiar la clave: su nombre de usuario, su
+        nombre y su rol quedan fijos, y tampoco se puede eliminar.
+        """
+        self.txt_usuario.setReadOnly(bloquear)
+        self.txt_nombre.setReadOnly(bloquear)
+        self.cb_rol.setEnabled(not bloquear)
 
     def _limpiar(self):
         """Deja el formulario listo para un usuario nuevo."""
         self.sel_usuario = None
         for campo in (self.txt_usuario, self.txt_nombre, self.txt_clave):
             campo.clear()
+        self._bloquear_datos(False)
         C.poner_combo(self.cb_rol, ROLES_UI[0][0])
         self.lbl_estado.setText("Nuevo usuario")
         self.tabla.tabla.clearSelection()
@@ -162,6 +180,14 @@ class UsuariosWindow(C.Ventana):
         self._limpiar()
         C.informar(self, "Usuarios", "Usuario %s creado correctamente." % usuario)
 
+    def _es_super(self, usuario):
+        """True si el usuario de la lista es el superusuario del sistema."""
+        try:
+            return any(u.get("usuario") == usuario and u.get("rol") == db.ROL_SUPER
+                       for u in db.listar_usuarios(incluir_super=True))
+        except Exception:
+            return False
+
     def _guardar(self):
         if not self.sel_usuario:
             C.aviso(self, "Usuarios", "Seleccione un usuario de la lista.")
@@ -173,6 +199,20 @@ class UsuariosWindow(C.Ventana):
         if usuario != self.sel_usuario:
             C.aviso(self, "Usuarios", "El nombre de usuario no se puede cambiar.\n"
                                       "Cree un usuario nuevo si lo necesita.")
+            return
+        if self._es_super(usuario):
+            # Del superusuario solo se cambia la clave: su nombre y su rol quedan fijos.
+            if not clave:
+                C.aviso(self, "Usuarios", "Escriba la nueva clave del superusuario.")
+                return
+            if not db.actualizar_usuario(usuario, clave=clave, permitir_super=True):
+                C.error(self, "Usuarios", "No se pudo cambiar la clave del superusuario.")
+                return
+            db.registrar_bitacora(self.usuario, "CAMBIÓ CLAVE SUPERUSUARIO", "usuarios",
+                                  usuario, "Clave del superusuario actualizada")
+            self._refrescar()
+            self._limpiar()
+            C.informar(self, "Usuarios", "Clave del superusuario actualizada.")
             return
         if not db.actualizar_usuario(usuario, clave=clave or None, nombre=nombre, rol=rol):
             C.error(self, "Usuarios", "No se pudo actualizar el usuario.")
@@ -186,6 +226,10 @@ class UsuariosWindow(C.Ventana):
     def _eliminar(self):
         if not self.sel_usuario:
             C.aviso(self, "Usuarios", "Seleccione un usuario de la lista.")
+            return
+        if self._es_super(self.sel_usuario):
+            C.aviso(self, "Usuarios", "El superusuario no se puede eliminar:\n"
+                                      "solo se le puede cambiar la clave.")
             return
         if not C.confirmar(self, "Usuarios", "¿Eliminar el usuario %s?" % self.sel_usuario,
                            si="Sí, eliminar", no="Cancelar"):

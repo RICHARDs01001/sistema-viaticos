@@ -41,11 +41,11 @@ def _falsos():
                                                     "otros", "total")}
     db.listar_respaldos = lambda n: []
     db.filas_numero = lambda n: []
-    db.listar_empleados = lambda: ["PERSONAL DE EJEMPLO DOS",
-                                   "PERSONAL DE EJEMPLO SEIS",
-                                   "PERSONAL DE EJEMPLO TRES",
-                                   "PERSONAL DE EJEMPLO CUATRO",
-                                   "PERSONAL DE EJEMPLO CINCO",
+    db.listar_empleados = lambda: ["CASTILLO RIVERA IVETTE CRISTINA",
+                                   "CHICAIZA GUAMAN MARIA FERNANDA",
+                                   "GUAMAN ESPINOZA FAUSTO LEONIDAS",
+                                   "HERNANDEZ ZAMBRANO RAMON EDUARDO",
+                                   "NARANJO NARANJO PAOLA",
                                    "TENELEMA OCHOA JUAN PABLO"]
     db.listar_clientes = lambda: ["MUNICIPALIDAD DE CUENCA", "MIEMPRESA"]
     db.listar_vehiculos = lambda: [{"placa": "AB1234", "tipo": "CAMIONETA",
@@ -117,8 +117,8 @@ def main():
                   == app.palette().base().color().name() else "FALLA"))
 
     _falsos()
-    usuario = {"nombre": "JUSTIFICA1", "usuario": "justifica1", "rol": db.ROL_SUPER}
-    comun = {"nombre": "JUSTIFICA1", "usuario": "justifica1", "rol": "USUARIO"}
+    usuario = {"nombre": "PAOLA NARANJO", "usuario": "paola", "rol": db.ROL_SUPER}
+    comun = {"nombre": "PAOLA NARANJO", "usuario": "paola", "rol": "USUARIO"}
 
     for nombre, archivo, clase in [
             ("Respaldos", "q_respaldos", "RespaldosWindow"),

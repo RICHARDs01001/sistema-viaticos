@@ -459,45 +459,54 @@ VIAJE_COLS_CIERRE = ["estado", "justificado_por", "justificado_el", "nota_justif
                      "devolucion_monto", "devolucion_observacion", "pago_empleado_monto",
                      "elaborado_por"]
 
-# Listado de personal de la empresa. En la plantilla son **de ejemplo**: el listado
-# real se carga con Parámetros → 👥 Empleados → 📥 Importar Excel (o se edita a mano).
+# Listado de personal de Miempresa (mismo orden del Excel de personal).
 EMPLEADOS_SEMILLA = [
-    "PERSONAL DE EJEMPLO UNO", "PERSONAL DE EJEMPLO DOS", "PERSONAL DE EJEMPLO TRES",
-    "PERSONAL DE EJEMPLO CUATRO", "PERSONAL DE EJEMPLO CINCO", "PERSONAL DE EJEMPLO SEIS"]
+    "CASTILLO RIOFRIO IVETTE CRISTINA", "CHAGUAY CAPA AXCEL STEVEN", "CHUÑIR GUTAMA ROSA INES",
+    "GONZALEZ OCHOA FAUSTO SANTIAGO", "GUILLERMO GUILLERMO DOLORES SENAIDA",
+    "GUZMAN ESPINOZA FAUSTO LEONIDAS", "HERNANDEZ REGALADO BRANDON JESUS",
+    "JARAMILLO BORJA MARTINA MARIA", "LAYS MILAD", "LOPEZ ROSALES MIRIAM ANGELA",
+    "MAURAD VILLIZHAÑAY DIANA CAROLINA", "MAYANCELA GONZALEZ IVANNA MICAELA",
+    "MEJIA IÑIGUEZ JOHANNA PATRICIA", "MENENDEZ ZAMBRANO RAMON EDUARDO",
+    "MIRABA ZAMBRANO ALDRY SEBASTIAN", "MORA MORA JEFFERSON GEOVANNY",
+    "MOROCHO VASQUEZ MELIDA MARICELA", "NARANJO GONZALEZ MIRIAM PAOLA",
+    "NARVAEZ ORTEGA ELVIS ALEXANDER", "ORTIZ PLAZA BLANCA EULALIA",
+    "PARAPI ROJAS EDISON WILFRIDO", "PATIÑO JADAN PAUL FERNANDO", "PEREZ SINCHI EDISSON PAUL",
+    "PEÑA FERNANDEZ MAYRA TATIANA", "QUEZADA QUEZADA JORGE EDUARDO",
+    "REYES MENENDEZ JUAN BRYAN", "SINCHI SINCHI CARLOS DANIEL", "YORDANO TERÁN",
+    "YUMBLA CALLE BORIS DANIEL", "YUNGA TACURI EDISSON SANTIAGO",
+    "ZAMBRANO MAZAMBA JUAN GUILLERMO", "ZUÑIGA GAVILANES BRUNO SANTIAGO"]
 
-# Catálogo de vehículos (plantilla: placas y choferes de ejemplo).
 VEHICULOS_SEMILLA = [
-    ("AAA-0001", "CAMIONETA", "PERSONAL DE EJEMPLO UNO"),
-    ("AAA-0002", "CAMIONETA", "PERSONAL DE EJEMPLO DOS"),
-    ("AAA-0003", "CAMION GRUA", "PERSONAL DE EJEMPLO TRES"),
-    ("AAA-0004", "CAMION", "PERSONAL DE EJEMPLO CUATRO")]
+    ("ABI-1466", "CAMIONETA", "DANIEL SAENZ"), ("ABI-3147", "CAMIONETA", "ELVIS NARVAEZ"),
+    ("ABL-3969", "CAMION GRUA", "EDISSON PÉREZ"), ("ABM-8247", "CAMION", "BRUNO ZUÑIGA"),
+    ("ABG-3186", "CAMIONETA", "BRANDON HERNÁNDEZ"), ("ABQ-3467", "CAMION", "SANTIAGO GONZÁLEZ")]
 
-# Los 4 usuarios que crean viáticos (vendedoras), el que justifica y el superusuario.
+# Los 4 usuarios que capturan viáticos, el que justifica y el superusuario.
 # El superusuario NO aparece en ninguna lista ni pantalla: solo entra escribiendo su clave.
 ROL_VENDEDOR = "vendedor"
 ROL_JUSTIFICA = "justifica"
 ROL_SUPER = "super"
 ROLES_VALIDOS = (ROL_VENDEDOR, ROL_JUSTIFICA, ROL_SUPER)
-ETIQUETA_ROL = {ROL_VENDEDOR: "VENDEDOR(A)", ROL_JUSTIFICA: "JUSTIFICACIÓN",
+ETIQUETA_ROL = {ROL_VENDEDOR: "EMPLEADO(A)", ROL_JUSTIFICA: "JUSTIFICACIÓN",
                 ROL_SUPER: "SUPERUSUARIO", "admin": "ADMINISTRADOR"}
 
 USUARIOS_SEMILLA = [
-    ("VENDEDOR1", "1234", "PERSONAL DE EJEMPLO UNO", ROL_VENDEDOR),
-    ("VENDEDOR2", "1234", "PERSONAL DE EJEMPLO DOS", ROL_VENDEDOR),
-    ("VENDEDOR3", "1234", "PERSONAL DE EJEMPLO TRES", ROL_VENDEDOR),
-    ("VENDEDOR4", "1234", "PERSONAL DE EJEMPLO CUATRO", ROL_VENDEDOR),
-    ("JUSTIFICA1", "1234", "PERSONAL DE EJEMPLO CINCO", ROL_JUSTIFICA),
+    ("TATIANA", "1234", "PEÑA FERNANDEZ MAYRA TATIANA", ROL_VENDEDOR),
+    ("CRISTINA", "1234", "CASTILLO RIOFRIO IVETTE CRISTINA", ROL_VENDEDOR),
+    ("MIRIAM", "1234", "LOPEZ ROSALES MIRIAM ANGELA", ROL_VENDEDOR),
+    ("MARTINA", "1234", "JARAMILLO BORJA MARTINA MARIA", ROL_VENDEDOR),
+    ("PAOLA NARANJO", "1234", "NARANJO GONZALEZ MIRIAM PAOLA", ROL_JUSTIFICA),
     ("MIEMPRESA", "miempresa", "MIEMPRESA", ROL_SUPER),
 ]
 # Nombre completo (como consta en el listado de personal) para cada usuario.
 # Solo se aplica si el usuario todavía tiene el nombre corto, para no pisar un
 # nombre cambiado a mano por el superusuario.
 NOMBRE_CORTO_A_COMPLETO = {
-    "VENDEDOR1": "PERSONAL DE EJEMPLO UNO",
-    "VENDEDOR2": "PERSONAL DE EJEMPLO DOS",
-    "VENDEDOR3": "PERSONAL DE EJEMPLO TRES",
-    "VENDEDOR4": "PERSONAL DE EJEMPLO CUATRO",
-    "JUSTIFICA1": "PERSONAL DE EJEMPLO CINCO",
+    "TATIANA": "PEÑA FERNANDEZ MAYRA TATIANA",
+    "CRISTINA": "CASTILLO RIOFRIO IVETTE CRISTINA",
+    "MIRIAM": "LOPEZ ROSALES MIRIAM ANGELA",
+    "MARTINA": "JARAMILLO BORJA MARTINA MARIA",
+    "PAOLA NARANJO": "NARANJO GONZALEZ MIRIAM PAOLA",
 }
 # Usuarios antiguos que ya no se usan: se retiran al migrar (solo si siguen intactos).
 USUARIOS_OBSOLETOS = [("admin", "ADMINISTRADOR", "admin"),
@@ -1673,8 +1682,8 @@ def eliminar_usuario(usuario):
 def login(usuario, clave):
     """Valida usuario y clave.
 
-    Acepta el usuario completo o su primer nombre (por ejemplo "JUSTIFICA1" entra
-    como "JUSTIFICA1"), y también entrar escribiendo solamente la clave (así
+    Acepta el usuario completo o su primer nombre (por ejemplo "PAOLA" entra
+    como "PAOLA NARANJO"), y también entrar escribiendo solamente la clave (así
     ingresa el superusuario). La clave se compara contra la guardada, que está
     cifrada; si la base venía de una versión anterior y la clave estaba en texto,
     se cifra en este mismo ingreso. No devuelve nada si la clave no coincide.
@@ -1890,6 +1899,23 @@ def cargar_parametros():
     return _copiar(_memoria("parametros", _SEGUNDOS_MEMORIA, _leer_parametros))
 
 
+def _hora_parametro(valor, por_defecto="00:00"):
+    """Hora de un parámetro: acepta `time`, `"06:00"` y `"06:00:00"` (PostgreSQL).
+
+    Antes se hacía `str(valor).split(":")` y se esperaban exactamente dos partes: una
+    base cuyo parámetro viniera con segundos hacía fallar la lectura **entera** de los
+    parámetros (`cargar_parametros`), y la pantalla no podía calcular el viático.
+    """
+    if isinstance(valor, time):
+        return valor
+    partes = [x for x in str(valor).strip().split(":") if x.strip()]
+    try:
+        return time(int(partes[0]), int(partes[1]) if len(partes) > 1 else 0)
+    except (IndexError, ValueError):
+        de_fabrica = str(por_defecto).split(":")
+        return time(int(de_fabrica[0]), int(de_fabrica[1]) if len(de_fabrica) > 1 else 0)
+
+
 def _leer_parametros():
     conn = conectar()
     # Se leen todas las columnas de la fila de parámetros: si la base viene de una
@@ -1903,8 +1929,11 @@ def _leer_parametros():
             d[clave] = valor
     for k in list(d):
         if k.startswith("hora_"):
-            h, m = str(d[k]).split(":")
-            d[k] = time(int(h), int(m))
+            # La hora de fábrica es la de esa misma columna (06:00, 13:00, 21:00…); así
+            # un valor vacío o raro nunca deja una hora límite en 00:00.
+            de_fabrica = ("00:00" if k not in PARAM_COLS
+                          else PARAMS_INICIALES[PARAM_COLS.index(k)])
+            d[k] = _hora_parametro(d[k], de_fabrica)
     return d
 
 def guardar_parametros(d):
@@ -2031,6 +2060,35 @@ def filas_originales(numero):
         (numero,))]
     conn.close()
     return r
+
+
+def ultimo_regreso_entregado(numero, ajuste_numero=None):
+    """Última fecha de regreso **ya entregada** antes del ajuste `ajuste_numero`.
+
+    Devuelve un `datetime.date` o `None` si el viático todavía no tiene filas.
+
+    Un ajuste N° 2 no puede empezar donde termina el viático original: tiene que
+    empezar donde terminó el ajuste N° 1. Antes el sistema tomaba siempre las fechas
+    del original, así que del segundo ajuste en adelante la fecha de salida quedaba
+    vieja (la del original) y el sistema volvía a pagar los días que ya se habían
+    entregado en el ajuste anterior.
+    """
+    conn = conectar()
+    try:
+        row = conn.execute(
+            "SELECT MAX(fecha_regreso) AS f FROM viajes WHERE viatico_numero=? "
+            "AND COALESCE(ajuste_numero,0) < ? "
+            "AND fecha_regreso IS NOT NULL AND fecha_regreso <> ''",
+            (numero, int(ajuste_numero or 0))).fetchone()
+    finally:
+        conn.close()
+    texto = (row["f"] if row else "") or ""
+    if not texto:
+        return None
+    try:
+        return _fechahora.fromisoformat(str(texto)[:10]).date()
+    except ValueError:
+        return None
 
 
 def conteo_ajustes():

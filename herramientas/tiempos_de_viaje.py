@@ -22,7 +22,7 @@ los km de OSRM al lado de los km registrados, para detectar un cantón mal ubica
 Uso:
     python herramientas\\tiempos_de_viaje.py --simular              no guarda: solo el cuadro
     python herramientas\\tiempos_de_viaje.py --simular --limite 8   prueba con 8 cantones
-    python herramientas\\tiempos_de_viaje.py --servidor 192.168.1.123
+    python herramientas\\tiempos_de_viaje.py --servidor 192.168.22.123
     python herramientas\\tiempos_de_viaje.py --solo GIRON           un solo cantón
 
 Los cantones que ya tienen horas NO se vuelven a consultar. Así, si la corrida se corta (se
@@ -142,7 +142,7 @@ def main():
     ap.add_argument("--simular", action="store_true", help="no guarda nada: solo el cuadro")
     ap.add_argument("--limite", type=int, default=0, help="probar solo con N cantones")
     ap.add_argument("--solo", default="", help="un cantón (ej. GIRON)")
-    ap.add_argument("--servidor", default="", help="IP del servidor central (ej. 192.168.1.123)")
+    ap.add_argument("--servidor", default="", help="IP del servidor central (ej. 192.168.22.123)")
     ap.add_argument("--forzar", action="store_true",
                     help="volver a consultar también los que ya tienen horas "
                          "(las medidas por la empresa nunca se pisan)")

@@ -9,12 +9,12 @@ rem =====================================================================
 chcp 65001 > nul
 rem ============================================================
 rem  Prueba de conexion al servidor de la base central
-rem  Uso:   PROBAR_SERVIDOR.bat                        (192.168.1.123 : 5432)
-rem         PROBAR_SERVIDOR.bat 192.168.1.123           (solo cambia la IP)
-rem         PROBAR_SERVIDOR.bat 192.168.1.123 5433      (IP y puerto)
+rem  Uso:   PROBAR_SERVIDOR.bat                        (192.168.22.123 : 5432)
+rem         PROBAR_SERVIDOR.bat 192.168.22.123           (solo cambia la IP)
+rem         PROBAR_SERVIDOR.bat 192.168.22.123 5433      (IP y puerto)
 rem ============================================================
 set SERVIDOR=%1
-if "%SERVIDOR%"=="" set SERVIDOR=192.168.1.123
+if "%SERVIDOR%"=="" set SERVIDOR=192.168.22.123
 set PUERTO=%2
 if "%PUERTO%"=="" set PUERTO=5432
 echo.

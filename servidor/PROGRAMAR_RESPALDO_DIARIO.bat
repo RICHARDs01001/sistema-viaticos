@@ -30,7 +30,7 @@ rem  Los 4 datos son OPCIONALES y van en ese orden: puerto, clave, servidor
 rem  y hora. Lo que no se escriba queda con el valor de la lista de arriba.
 rem  Ejemplos:
 rem    PROGRAMAR_RESPALDO_DIARIO.bat                                    <- lo normal
-rem    PROGRAMAR_RESPALDO_DIARIO.bat 2345 miempresa 192.168.1.4       <- con la IP de la red
+rem    PROGRAMAR_RESPALDO_DIARIO.bat 2345 miempresa 192.168.22.4       <- con la IP de la red
 rem    PROGRAMAR_RESPALDO_DIARIO.bat 2345 miempresa 127.0.0.1 22:30    <- cambiando la hora
 rem
 rem  Apunta SIEMPRE a esta misma carpeta: la tarea llama al
@@ -84,7 +84,7 @@ echo.
 echo  El respaldo corre EN EL PROPIO SERVIDOR y se conecta a
 echo  127.0.0.1 ^(el mismo equipo^): no pasa por la red ni por el firewall.
 echo  Si prefiere que se conecte por la IP de la red, ejecutelo asi:
-echo      PROGRAMAR_RESPALDO_DIARIO.bat 2345 miempresa 192.168.1.4
+echo      PROGRAMAR_RESPALDO_DIARIO.bat 2345 miempresa 192.168.22.4
 echo.
 
 rem --- 1) comprobar que el respaldo FUNCIONA (antes de programar) ---

@@ -157,7 +157,7 @@ En `sistema_viaticos_miempresa\configuracion.py`, dentro de `DEFECTO` → `postg
 ```
 y lo mismo en los `config.json` (el del programa y el que está junto al `.exe`). Después:
 ```
-EMPAQUETAR_EXE_SERVIDOR.bat 192.168.1.123 5433
+EMPAQUETAR_EXE_SERVIDOR.bat 192.168.22.123 5433
 ```
 para que el `.exe` salga ya con ese puerto.
 

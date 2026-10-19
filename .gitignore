@@ -30,12 +30,6 @@ data/
 excel/
 respaldos_base/
 
-# --- Informes y PDF armados con los datos reales (viáticos, facturas, capturas) ---
-VIATICOS_*.md
-PDF_VIATICOS_*/
-capturas/
-*.pdf
-
 # --- Excels de trabajo y bases de prueba (viven fuera del programa) ---
 herramientas/excels_de_trabajo/
 herramientas/prueba_excel/

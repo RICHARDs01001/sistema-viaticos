@@ -81,8 +81,8 @@ def _sembrar_datos():
     import database as db
 
     db.init_db()
-    for nombre in ("PERSONAL DE EJEMPLO DOS", "PERSONAL DE EJEMPLO SEIS",
-                   "PERSONAL DE EJEMPLO TRES", "PERSONAL DE EJEMPLO CUATRO"):
+    for nombre in ("CASTILLO RIVERA IVETTE CRISTINA", "CHICAIZA GUAMAN MARIA FERNANDA",
+                   "GUAMAN ESPINOZA FAUSTO LEONIDAS", "HERNANDEZ ZAMBRANO RAMON EDUARDO"):
         db.agregar_empleado(nombre)
     for nombre in ("MUNICIPALIDAD DE CUENCA", "MIEMPRESA", "ETAPA"):
         db.agregar_cliente(nombre)
@@ -90,12 +90,12 @@ def _sembrar_datos():
     db.set_distancia("MACAS", 242, 6.0)
     db.set_distancia("AZOGUES", 32, 0.67)
 
-    cab = {"responsable": "PERSONAL DE EJEMPLO DOS", "cliente_proyecto": "MIEMPRESA",
+    cab = {"responsable": "CASTILLO RIVERA IVETTE CRISTINA", "cliente_proyecto": "MIEMPRESA",
            "placa": "AB1234  CAMIONETA", "observaciones": "", "recibo_viatico": "",
            "recibo_viatico_2": "", "recibo_viatico_3": ""}
     for n in range(3):
         dia = "2026-09-%02d" % (10 + n)
-        db.guardar_viaje(cab, [_fila_viaje(nombre_empleado="PERSONAL DE EJEMPLO DOS",
+        db.guardar_viaje(cab, [_fila_viaje(nombre_empleado="CASTILLO RIVERA IVETTE CRISTINA",
                                            fecha_salida=dia, hora_salida="08:00",
                                            fecha_regreso=dia, hora_regreso="18:00",
                                            lugar_trabajo="MACAS", km=242, total=45.5,
@@ -228,11 +228,11 @@ def _una_vuelta(usuario, filas, ms_conexion, servidor):
                 filas, ms_conexion)
 
     if not servidor:
-        cab = {"responsable": "PERSONAL DE EJEMPLO DOS",
+        cab = {"responsable": "CASTILLO RIVERA IVETTE CRISTINA",
                "cliente_proyecto": "MIEMPRESA", "placa": "AB1234  CAMIONETA",
                "observaciones": "", "recibo_viatico": "", "recibo_viatico_2": "",
                "recibo_viatico_3": ""}
-        nueva = _fila_viaje(nombre_empleado="PERSONAL DE EJEMPLO SEIS",
+        nueva = _fila_viaje(nombre_empleado="CHICAIZA GUAMAN MARIA FERNANDA",
                             fecha_salida="2026-09-30", hora_salida="07:00",
                             fecha_regreso="2026-09-30", hora_regreso="19:00",
                             lugar_trabajo="AZOGUES", km=32, total=20.0,
@@ -286,7 +286,7 @@ def main():
         print("Se suman %.0f ms a cada conexión nueva (como contra el servidor central)."
               % latencia)
 
-    usuario = {"nombre": "JUSTIFICA1", "usuario": "justifica1", "rol": db.ROL_SUPER}
+    usuario = {"nombre": "PAOLA NARANJO", "usuario": "paola", "rol": db.ROL_SUPER}
     comparar = "--comparar" in sys.argv
 
     if latencia:

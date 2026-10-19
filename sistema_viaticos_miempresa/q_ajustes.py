@@ -309,7 +309,7 @@ class AjustesWindow(C.Ventana):
     def _elaborado_por_defecto(self):
         """Firma por defecto el usuario que inició sesión (justificación)."""
         return ((self.usuario or {}).get("nombre")
-                or (self.usuario or {}).get("usuario") or "JUSTIFICA1")
+                or (self.usuario or {}).get("usuario") or "PAOLA NARANJO")
 
     def _bitacora(self, accion, detalle="", referencia=None):
         """Registra la acción en el informe de actividad del superusuario."""
@@ -813,7 +813,7 @@ class AjustesWindow(C.Ventana):
                       "observacion": r0.get("devolucion_observacion") or "",
                       "pago_empleado": float(r0.get("pago_empleado_monto") or 0),
                       "elaborado_por": (self.txt_elab.text() or "").strip()
-                                       or r0.get("elaborado_por") or "JUSTIFICA1"}
+                                       or r0.get("elaborado_por") or "PAOLA NARANJO"}
         reportes.imprimir_justificacion(self.numero, cab, filas,
                                         db.listar_gastos(self.numero),
                                         db.listar_respaldos(self.numero), devolucion)

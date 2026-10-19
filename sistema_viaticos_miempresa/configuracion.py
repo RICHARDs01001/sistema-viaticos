@@ -19,7 +19,7 @@ sin volver a empaquetar, ya sea desde la pantalla del sistema o editando:
 {
   "motor": "postgres",
   "postgres": {
-    "host": "192.168.1.4", "puerto": 2345, "base": "viaticos",
+    "host": "192.168.22.4", "puerto": 2345, "base": "viaticos",
     "usuario": "miempresa", "clave": "miempresa"
   },
   "respaldos": { "modo": "base", "carpeta": "" },
@@ -63,7 +63,7 @@ MOTOR_POSTGRES = "postgres"
 
 # Equipo donde corre la base de datos central (el que tiene PostgreSQL encendido).
 # Esta es la dirección que usan todas las máquinas que solo llevan el .exe.
-SERVIDOR = "192.168.1.4"
+SERVIDOR = "192.168.22.4"
 CLAVE_SERVIDOR = "miempresa"
 
 DEFECTO = {

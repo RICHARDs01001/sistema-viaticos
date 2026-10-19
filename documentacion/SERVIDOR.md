@@ -8,7 +8,7 @@
 # Servidor de la base de datos (PostgreSQL directo en Windows)
 
 > **La IP del servidor se escribe en cada computadora** (y queda dentro del `.exe`). En esta guía
-> aparece `192.168.1.123` como ejemplo: cambie ese número por el de su servidor. Ojo: una IP
+> aparece `192.168.22.123` como ejemplo: cambie ese número por el de su servidor. Ojo: una IP
 > terminada en **`.1`** es el **router** de la red, así que no sirve para el servidor.
 >
 > Las tablas las crea el propio programa la primera vez que se conecta.
@@ -24,7 +24,7 @@
 
 | Dato | Valor | Dónde se escribe |
 | --- | --- | --- |
-| **IP del servidor** | `192.168.1.123` | pantalla **🔌 CONEXIÓN / BASE DE DATOS** de cada PC |
+| **IP del servidor** | `192.168.22.123` | pantalla **🔌 CONEXIÓN / BASE DE DATOS** de cada PC |
 | **Puerto** | `5432` — o `5433` si el 5432 ya está ocupado | igual en todas |
 | **Base** | `viaticos` | igual en todas |
 | **Usuario** | `miempresa` | igual en todas |
@@ -46,16 +46,16 @@
 ```powershell
 # a) ¿Cuál es la IP de esta máquina de verdad?
 ipconfig | Select-String "IPv4", "Puerta de enlace"
-#    Debe salir:  IPv4 . . . . : 192.168.1.123
+#    Debe salir:  IPv4 . . . . : 192.168.22.123
 #    Si sale otra cosa, ESA es la IP real de esta PC: úsela en todo (o póngale la fija del A8).
 ```
 
 > ⚠️ **Ojo con la IP `.1`.** En casi todas las redes la dirección `…1` es **el router**, no una PC. Si
-> en el `ipconfig` de esta máquina **no** aparece la IP que se acordó (`192.168.1.123`), entonces hay
+> en el `ipconfig` de esta máquina **no** aparece la IP que se acordó (`192.168.22.123`), entonces hay
 > que ponerla (con la IP fija del **A8**) o usar la que la máquina tenga hoy. Compruebe también que la
 > **puerta de enlace** no sea la misma que se le puso a esta PC (eso sería un **conflicto de IP** y
 > ninguna de las dos funcionaría).
-> Un truco: `ping -a 192.168.1.1` y, desde otra PC, `ping 192.168.1.1` — si contesta el router, ese
+> Un truco: `ping -a 192.168.22.1` y, desde otra PC, `ping 192.168.22.1` — si contesta el router, ese
 > `…1` está ocupado. Usa la IP real que salga en `ipconfig` en **todos** los comandos y en las PC.
 
 ```powershell
@@ -161,9 +161,9 @@ desde sí mismo con clave; la segunda, para toda la red):
 
 ```conf
 host    all    all    127.0.0.1/32        scram-sha-256
-host    all    all    192.168.1.0/24     scram-sha-256
+host    all    all    192.168.22.0/24     scram-sha-256
 ```
-> `192.168.1.0/24` = "cualquier PC que empiece con 192.168.1." (las 5 PC y los portátiles de la
+> `192.168.22.0/24` = "cualquier PC que empiece con 192.168.22." (las 5 PC y los portátiles de la
 > empresa). Si algún día se conecta desde otra red, se agrega otra línea con ese rango.
 > Si tu archivo usa `md5` en vez de `scram-sha-256`, deja el mismo que ya tenga.
 
@@ -208,13 +208,13 @@ Get-NetFirewallProfile | Format-Table Name, Enabled -AutoSize
 ## A7 — Respaldo diario (una vez) y respaldo a mano
 
 Para la versión nativa el respaldo es `servidor\respaldar_base_nativo.bat`. En el servidor la base se llama
-`viaticos`, el usuario es **miempresa**, el puerto **2345** y la IP **192.168.1.4** (los mismos de
+`viaticos`, el usuario es **miempresa**, el puerto **2345** y la IP **192.168.22.4** (los mismos de
 `sistema_viaticos_miempresa\configuracion.py`). El script usa **PostgreSQL 18**
 (`C:\Program Files\PostgreSQL\18\bin`) y, si el servidor tuviera otra versión, la busca solo.
 
 ```bat
 servidor\respaldar_base_nativo.bat miempresa 2345                 (a mano, EN el servidor → usa 127.0.0.1)
-servidor\respaldar_base_nativo.bat miempresa 2345 192.168.1.4     (a mano, DESDE otra PC de la red)
+servidor\respaldar_base_nativo.bat miempresa 2345 192.168.22.4     (a mano, DESDE otra PC de la red)
 ```
 Deja el archivo en `servidor\respaldos_base\viaticos_AAAAAMMDD_HHMMSS.sql`. **No borra nada:** se
 conservan todos los respaldos (y los manuales `viaticos_ANTES_DE_....sql` nunca se tocan). Para que
@@ -236,7 +236,7 @@ datos (los 4 son opcionales y van en este orden: **puerto, clave, servidor y hor
 por defecto):
 
 ```bat
-PROGRAMAR_RESPALDO_DIARIO.bat 2345 miempresa 192.168.1.4
+PROGRAMAR_RESPALDO_DIARIO.bat 2345 miempresa 192.168.22.4
 ```
 
 Para quitarla o rehacerla: `servidor\QUITAR_RESPALDO_DIARIO.bat` (también como administrador).
@@ -267,7 +267,7 @@ cuando (una vez por semana basta). Si el servidor se daña, el respaldo tiene qu
 
 ```powershell
 # a) IP fija (use el nombre de la tarjeta del PASO 0-e y la IP real que confirmó allí)
-New-NetIPAddress -InterfaceAlias "Ethernet" -IPAddress 192.168.1.123 -PrefixLength 24 -DefaultGateway 192.168.1.254
+New-NetIPAddress -InterfaceAlias "Ethernet" -IPAddress 192.168.22.123 -PrefixLength 24 -DefaultGateway 192.168.22.254
 Set-DnsClientServerAddress -InterfaceAlias "Ethernet" -ServerAddresses 8.8.8.8, 8.8.4.4
 #    (el DefaultGateway es el router: si el router NO es .254, ponga el que dé `ipconfig`)
 
@@ -326,7 +326,7 @@ New-NetFirewallRule -DisplayName "Viaticos PostgreSQL 5433" -Direction Inbound -
 # 4) En CADA PC del programa: 🔌 CONEXIÓN / BASE DE DATOS → Puerto = 5433 → probar → 💾 Guardar
 
 # 5) Comprobar desde otra PC
-servidor\PROBAR_SERVIDOR.bat 192.168.1.123 5433     # Puerto 5433 abierto ..: True
+servidor\PROBAR_SERVIDOR.bat 192.168.22.123 5433     # Puerto 5433 abierto ..: True
 ```
 Todo lo demás **sigue igual** (IP, base `viaticos`, usuario `miempresa`, clave y respaldos).
 
@@ -348,7 +348,7 @@ Todo lo demás **sigue igual** (IP, base `viaticos`, usuario `miempresa`, clave 
 
 1. Abre el sistema con el **superusuario** → **🔌 CONEXIÓN / BASE DE DATOS**.
 2. Marca **«Base CENTRAL en el servidor (PostgreSQL)»** y escribe:
-   **Servidor `192.168.1.123`** · **Puerto `5432`** (o `5433`) · **Base `viaticos`** ·
+   **Servidor `192.168.22.123`** · **Puerto `5432`** (o `5433`) · **Base `viaticos`** ·
    **Usuario `miempresa`** · **Clave** la elegida · Respaldos **«Guardar dentro de la base central»**.
 3. Pulsa **🔌 Probar conexión** → debe decir «**Conexión correcta · PostgreSQL …**» → **💾 Guardar**.
    La barra superior de esa PC debe quedar en **BASE CENTRAL**.
@@ -362,7 +362,7 @@ Si prefieres hacerlo a mano, el `config.json` (va junto al `.exe`) es:
 {
   "motor": "postgres",
   "postgres": {
-    "host": "192.168.1.123", "puerto": 5432, "base": "viaticos",
+    "host": "192.168.22.123", "puerto": 5432, "base": "viaticos",
     "usuario": "miempresa", "clave": "miempresa"
   },
   "respaldos": { "modo": "base", "carpeta": "" }
@@ -373,7 +373,7 @@ Si prefieres hacerlo a mano, el `config.json` (va junto al `.exe`) es:
 
 # Prueba final (hoja de control)
 
-- [ ] **0** — Confirmado que la máquina es de verdad la `192.168.1.123` (no es el router) y el puerto elegido
+- [ ] **0** — Confirmado que la máquina es de verdad la `192.168.22.123` (no es el router) y el puerto elegido
 - [ ] **A1** — Servicio **Running** y en **Automático**
 - [ ] **A2** — Base `viaticos` + usuario `miempresa` creados y `psql` entra con ese usuario
 - [ ] **A3/A4** — `listen_addresses = '*'`, `timezone = 'America/Guayaquil'`, línea de la red en `pg_hba.conf`
@@ -381,7 +381,7 @@ Si prefieres hacerlo a mano, el `config.json` (va junto al `.exe`) es:
 - [ ] **A6** — Regla de firewall creada y `Test-NetConnection 127.0.0.1 -Port <puerto>` = True
 - [ ] **A7** — Respaldo generado a mano y tarea programada diaria creada (y probada)
 - [ ] **A8** — IP fija puesta; la máquina no se suspende ni hiberna
-- [ ] **Otra PC** — `servidor\PROBAR_SERVIDOR.bat 192.168.1.123 5432` → `True`
+- [ ] **Otra PC** — `servidor\PROBAR_SERVIDOR.bat 192.168.22.123 5432` → `True`
 - [ ] **Otra PC** — El programa marca **BASE CENTRAL** y abre con la clave
 - [ ] **Prueba real** — Un viático creado en una PC se ve en la otra (botón 🔄 Actualizar) y la numeración sigue sin repetir
 - [ ] **Prueba real** — La justificación sale con **un solo PDF** y en **🕵 INFORME DE ACTIVIDAD** se ven las dos PC

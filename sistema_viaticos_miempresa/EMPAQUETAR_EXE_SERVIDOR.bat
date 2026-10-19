@@ -12,7 +12,7 @@ rem ============================================================
 rem  Empaqueta el .exe dejandolo apuntando al SERVIDOR NUEVO
 rem
 rem  Uso:   EMPAQUETAR_EXE_SERVIDOR.bat
-rem         EMPAQUETAR_EXE_SERVIDOR.bat 192.168.1.185 5432
+rem         EMPAQUETAR_EXE_SERVIDOR.bat 192.168.22.185 5432
 rem
 rem  IMPORTANTE: la IP y el puerto quedan DENTRO del ejecutable
 rem  (se escriben como valor de fabrica en configuracion.py, con
@@ -32,7 +32,7 @@ echo  Todo el empaquetado esta en Sistema_Viaticos.spec
 echo.
 
 set IP=%~1
-if "%IP%"=="" set /p IP=Escriba la IP del servidor (ej. 192.168.1.185):
+if "%IP%"=="" set /p IP=Escriba la IP del servidor (ej. 192.168.22.185):
 if "%IP%"=="" (
   echo.
   echo *** Falta la IP del servidor. ***
@@ -49,7 +49,7 @@ if not "%IP:~-2%"==".1" goto preguntas
 echo.
 echo *** ATENCION: la IP %IP% termina en .1 y en casi todas las redes ESA es la IP DEL
 echo     ROUTER (la puerta de enlace), NO una computadora. El servidor de viaticos no
-echo     puede tener la IP del router: pida una IP libre ^(por ejemplo 192.168.1.185^).
+echo     puede tener la IP del router: pida una IP libre ^(por ejemplo 192.168.22.185^).
 echo     Compruebelo con "ipconfig" y con "ping %IP%" desde otra PC.
 echo.
 set /p SEGURO=Seguro que la PC servidor tiene la IP %IP% ? (s/N):

@@ -266,7 +266,7 @@ def imprimir_justificacion(numero, cab, filas, gastos, respaldos, devolucion=Non
     chofer = next((f["nombre_empleado"] for f in filas if f.get("es_chofer")), "")
     encargado = next((f["nombre_empleado"] for f in filas if f.get("es_encargado")),
                      cab.get("responsable", ""))
-    elaborado = devolucion.get("elaborado_por") or "JUSTIFICA1"
+    elaborado = devolucion.get("elaborado_por") or "PAOLA NARANJO"
     recibos = " / ".join(x for x in (cab.get("recibo_viatico"), cab.get("recibo_viatico_2"),
                                      cab.get("recibo_viatico_3")) if x) or "—"
     # La observación la escribe el responsable (a veces es a favor de la empresa, a veces del empleado)
