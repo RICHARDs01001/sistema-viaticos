@@ -110,20 +110,31 @@ function Guardar-Ruta([string]$ruta) {
 
 # --- Accesos directos ---------------------------------------------------------
 function Get-Accesos {
-    $zonas = @(
-        [Environment]::GetFolderPath("Desktop"),
-        [Environment]::GetFolderPath("CommonDesktopDirectory"),
-        [Environment]::GetFolderPath("Programs"),
-        [Environment]::GetFolderPath("CommonPrograms"),
-        (Join-Path $env:APPDATA "Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar")
-    ) | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -Unique
-
-    if ($ZonasAccesos -and $ZonasAccesos.Count -gt 0) { $zonas = $ZonasAccesos }
+    # OJO: en el Escritorio se miran SOLO los accesos de la primera fila. Antes se
+    # bajaba a las subcarpetas del escritorio y por eso se terminaban tocando accesos
+    # de otros programas guardados dentro de una carpeta del escritorio (Octave, VLC,
+    # FileZilla, ...). En el menú de inicio sí se baja a las subcarpetas.
+    if ($ZonasAccesos -and $ZonasAccesos.Count -gt 0) {
+        $zonas = @($ZonasAccesos | Where-Object { $_ -and (Test-Path -LiteralPath $_) } |
+                   ForEach-Object { [pscustomobject]@{ Ruta = $_; Profundo = $false } })
+    } else {
+        $zonas = @(
+            [pscustomobject]@{ Ruta = [Environment]::GetFolderPath("Desktop");               Profundo = $false },
+            [pscustomobject]@{ Ruta = [Environment]::GetFolderPath("CommonDesktopDirectory"); Profundo = $false },
+            [pscustomobject]@{ Ruta = [Environment]::GetFolderPath("Programs");               Profundo = $true  },
+            [pscustomobject]@{ Ruta = [Environment]::GetFolderPath("CommonPrograms");         Profundo = $true  },
+            [pscustomobject]@{ Ruta = (Join-Path $env:APPDATA "Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar"); Profundo = $false }
+        ) | Where-Object { $_.Ruta -and (Test-Path -LiteralPath $_.Ruta) }
+    }
 
     $shell = New-Object -ComObject WScript.Shell
     $lista = @()
     foreach ($zona in $zonas) {
-        $archivos = Get-ChildItem -LiteralPath $zona -Filter "*.lnk" -File -Recurse -ErrorAction SilentlyContinue
+        $archivos = if ($zona.Profundo) {
+            Get-ChildItem -LiteralPath $zona.Ruta -Filter "*.lnk" -File -Recurse -ErrorAction SilentlyContinue
+        } else {
+            Get-ChildItem -LiteralPath $zona.Ruta -Filter "*.lnk" -File -ErrorAction SilentlyContinue
+        }
         foreach ($lnk in $archivos) {
             try {
                 $a = $shell.CreateShortcut($lnk.FullName)
@@ -149,16 +160,20 @@ function Reparar-Accesos([string]$exe, [switch]$Simular) {
     $shell = New-Object -ComObject WScript.Shell
     $cambiados = 0
     $creados = 0
+    $borrados = 0
+    $accesos = @(Get-Accesos)
 
-    foreach ($a in (Get-Accesos)) {
+    # --- 1) los accesos del sistema se re-apuntan al ejecutable nuevo ----------
+    foreach ($a in $accesos) {
         $destino = $a.Destino
         $mismoNombre = ((Split-Path -Leaf $destino) -ieq $NombreExe)
         $apuntaAqui = ((Split-Path -Parent $destino) -ieq $carpeta)
         # Solo se tocan los accesos del sistema: el que apunta al ejecutable, el que
         # está en la carpeta del programa o el que se llama "Sistema de Viáticos".
         # Un acceso roto de otro programa (Office, VLC, etc.) NO se toca.
-        $seLlamaViaticos = ($a.Nombre -match "(?i)vi[aá]tic")
+        $seLlamaViaticos = ($a.Nombre -match "(?i)vi.{1,4}tic")
         if (-not ($mismoNombre -or $apuntaAqui -or $seLlamaViaticos)) { continue }
+        if ($destino -ieq $exe) { continue }   # ya apunta al ejecutable nuevo
 
         if ($Simular) {
             Decir ("  (-Simular) se habría re-apuntado: {0}" -f $a.Archivo) "Yellow"
@@ -180,31 +195,43 @@ function Reparar-Accesos([string]$exe, [switch]$Simular) {
         }
     }
 
-    if ($cambiados -gt 0) { return [pscustomobject]@{ Cambiados = $cambiados; Creados = 0 } }
-
-    # No había ninguno: se deja uno en el escritorio y otro en el menú de inicio.
+    # --- 2) el acceso del escritorio se deja SIEMPRE (creado o al día) ---------
+    #   Antes, si se había re-apuntado cualquier otro acceso, se salía sin crear el
+    #   del escritorio: la persona actualizaba pero se quedaba sin el icono nuevo.
     if ($ZonasAccesos -and $ZonasAccesos.Count -gt 0) {
-        $destinos = @(
-            (Join-Path $ZonasAccesos[0] "Sistema de Viáticos.lnk"),
-            (Join-Path $ZonasAccesos[[Math]::Min(1, $ZonasAccesos.Count - 1)] "Sistema de Viáticos.lnk")
-        ) | Select-Object -Unique
+        $zonaEscritorio = $ZonasAccesos[0]
+        $zonaMenu = $ZonasAccesos[[Math]::Min(1, $ZonasAccesos.Count - 1)]
     } else {
-        $destinos = @(
-            (Join-Path ([Environment]::GetFolderPath("Desktop")) "Sistema de Viáticos.lnk"),
-            (Join-Path ([Environment]::GetFolderPath("Programs")) "Sistema de Viáticos.lnk")
-        )
+        $zonaEscritorio = [Environment]::GetFolderPath("Desktop")
+        $zonaMenu = [Environment]::GetFolderPath("Programs")
     }
-    foreach ($lnk in $destinos) {
-        if (-not $lnk) { continue }
-        if (Test-Path -LiteralPath $lnk) { continue }
+
+    foreach ($zona in (@($zonaEscritorio, $zonaMenu) | Where-Object { $_ } | Select-Object -Unique)) {
+        if (-not (Test-Path -LiteralPath $zona)) { continue }
+        $lnk = Join-Path $zona "Sistema de Viáticos.lnk"
+
+        # Si en esa carpeta ya hay uno con el nombre escrito de otra forma
+        # ("Sistema de Viaticos.lnk", sin tilde), se usa ese en vez de crear otro.
+        if (-not (Test-Path -LiteralPath $lnk)) {
+            $parecido = @(Get-ChildItem -LiteralPath $zona -Filter "*.lnk" -File -ErrorAction SilentlyContinue |
+                          Where-Object { $_.BaseName -match "(?i)^\s*sistema de vi.{1,4}ticos\s*(\(\d+\))?\s*(–|-)?\s*(acceso directo)?\s*$" } |
+                          Sort-Object Name | Select-Object -First 1)
+            if ($parecido.Count -gt 0) { $lnk = $parecido[0].FullName }
+        }
+
+        $actual = ""
+        if (Test-Path -LiteralPath $lnk) {
+            try { $actual = $shell.CreateShortcut($lnk).TargetPath } catch { }
+            if ($actual -ieq $exe) { continue }   # ya está bien
+        }
+
         if ($Simular) {
-            Decir ("  (-Simular) se habría creado: {0}" -f $lnk) "Yellow"
+            Decir ("  (-Simular) se habría dejado al día: {0}" -f $lnk) "Yellow"
             $creados++
             continue
         }
         try {
-            $padre = Split-Path -Parent $lnk
-            if (-not (Test-Path -LiteralPath $padre)) { New-Item -ItemType Directory -Path $padre -Force | Out-Null }
+            if (-not (Test-Path -LiteralPath $zona)) { New-Item -ItemType Directory -Path $zona -Force | Out-Null }
             $n = $shell.CreateShortcut($lnk)
             $n.TargetPath = $exe
             $n.WorkingDirectory = $carpeta
@@ -212,12 +239,38 @@ function Reparar-Accesos([string]$exe, [switch]$Simular) {
             $n.Description = "Sistema de Viáticos"
             $n.Save()
             $creados++
-            Decir ("  acceso directo creado: {0}" -f $lnk) "DarkGray"
+            if ($actual) { Decir ("  acceso directo del escritorio actualizado: {0}" -f $lnk) "DarkGray" }
+            else { Decir ("  acceso directo creado: {0}" -f $lnk) "DarkGray" }
         } catch {
             Decir ("  no se pudo crear {0}: {1}" -f $lnk, $_.Exception.Message) "Yellow"
         }
     }
-    return [pscustomobject]@{ Cambiados = 0; Creados = $creados }
+
+    # --- 3) accesos repetidos del sistema ("Sistema de Viáticos (2)", " - Acceso
+    #        directo"): se borran y queda solo el de arriba ---------------------
+    $patronPropio = "(?i)^\s*sistema de vi.{1,4}ticos\s*(\(\d+\))?\s*(–|-)?\s*(acceso directo)?\s*$"
+    foreach ($zona in (@($zonaEscritorio, $zonaMenu) | Where-Object { $_ } | Select-Object -Unique)) {
+        if (-not (Test-Path -LiteralPath $zona)) { continue }
+        $propios = @(Get-ChildItem -LiteralPath $zona -Filter "*.lnk" -File -ErrorAction SilentlyContinue |
+                     Where-Object { $_.BaseName -match $patronPropio } |
+                     Sort-Object @{ Expression = { if ($_.BaseName -match "\(\d+\)|acceso directo") { 1 } else { 0 } } }, Name)
+        foreach ($extra in ($propios | Select-Object -Skip 1)) {
+            if ($Simular) {
+                Decir ("  (-Simular) se habría borrado el repetido: {0}" -f $extra.FullName) "Yellow"
+                $borrados++
+                continue
+            }
+            try {
+                Remove-Item -LiteralPath $extra.FullName -Force
+                $borrados++
+                Decir ("  acceso repetido borrado: {0}" -f $extra.Name) "DarkGray"
+            } catch {
+                Decir ("  no se pudo borrar {0}: {1}" -f $extra.Name, $_.Exception.Message) "Yellow"
+            }
+        }
+    }
+
+    return [pscustomobject]@{ Cambiados = $cambiados; Creados = $creados; Borrados = $borrados }
 }
 
 function Buscar-Instalacion {
@@ -313,7 +366,7 @@ if ($SoloAccesos) {
     $r = Reparar-Accesos $ExeLocal -Simular:$Simular
     Guardar-Ruta $App
     Decir ""
-    Decir ("Listo: {0} re-apuntado(s), {1} creado(s)." -f $r.Cambiados, $r.Creados) "Green"
+    Decir ("Listo: {0} re-apuntado(s), {1} creado(s)/actualizado(s), {2} repetido(s) borrado(s)." -f $r.Cambiados, $r.Creados, $r.Borrados) "Green"
     if (-not $SinPausa) { Read-Host "ENTER para cerrar" | Out-Null }
     exit 0
 }
@@ -486,7 +539,7 @@ Set-Content -LiteralPath $ArchivoLocal -Value $VersionRemota -Encoding ASCII
 Guardar-Ruta $App
 
 # --------------------------------------------------------- accesos directos
-$r = [pscustomobject]@{ Cambiados = 0; Creados = 0 }
+$r = [pscustomobject]@{ Cambiados = 0; Creados = 0; Borrados = 0 }
 if (Test-Path -LiteralPath $ExeLocal) {
     Decir ""
     Decir "Revisando los accesos directos ..."
@@ -498,7 +551,7 @@ Decir "============================================================" "Green"
 Decir "  Listo: el sistema quedó en la versión $VersionRemota" "Green"
 Decir "============================================================" "Green"
 Decir "  Sus datos NO se tocaron (data\, config.json, *.db)."
-Decir ("  Accesos directos: {0} re-apuntado(s), {1} creado(s)." -f $r.Cambiados, $r.Creados)
+Decir ("  Accesos directos: {0} re-apuntado(s), {1} creado(s)/actualizado(s), {2} repetido(s) borrado(s)." -f $r.Cambiados, $r.Creados, $r.Borrados)
 Decir "  Copia de la versión anterior: respaldos_actualizacion\$Sello"
 Decir ""
 Decir "  Si algo no arranca, copie la carpeta del respaldo encima de:"
