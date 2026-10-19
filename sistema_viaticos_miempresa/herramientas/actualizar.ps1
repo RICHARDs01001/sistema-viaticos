@@ -409,7 +409,9 @@ Decir "Versión instalada: $VersionLocal"
 # --------------------------------------------------------- versión de GitHub
 $VersionRemota = ""
 try {
-    $respuesta = Invoke-WebRequest -Uri "$Crudo/version.txt" -UseBasicParsing -TimeoutSec 40
+    # El ?t=... evita que GitHub entregue una copia guardada en cache de version.txt
+    $sello = [DateTime]::UtcNow.Ticks
+    $respuesta = Invoke-WebRequest -Uri "$Crudo/version.txt?t=$sello" -UseBasicParsing -TimeoutSec 40
     $VersionRemota = ($respuesta.Content -split "`n")[0].Trim()
 } catch {
     Fallar "No pude leer version.txt del repositorio ($Crudo/version.txt). Revise la dirección, la rama y que el repositorio sea público."

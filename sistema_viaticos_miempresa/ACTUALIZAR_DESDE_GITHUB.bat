@@ -51,8 +51,9 @@ echo.
 set "PS1=%AQUI%herramientas\actualizar.ps1"
 rem --- Se baja SIEMPRE la ultima version del actualizador: asi una PC con ---
 rem --- un actualizador viejo no repite fallos que ya se corrigieron.     ---
+rem --- El ?v=... evita que GitHub entregue una copia guardada en cache.  ---
 echo  Bajando el actualizador de GitHub ...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/RICHARDs01001/sistema-viaticos/main/sistema_viaticos_miempresa/herramientas/actualizar.ps1' -OutFile '%TEMP%\actualizar_viaticos.ps1' } catch { exit 1 }"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/RICHARDs01001/sistema-viaticos/main/sistema_viaticos_miempresa/herramientas/actualizar.ps1?v=%RANDOM%%RANDOM%' -OutFile '%TEMP%\actualizar_viaticos.ps1' } catch { exit 1 }"
 if errorlevel 1 (
   if exist "%PS1%" (
     echo  Sin conexion: uso el actualizador que ya esta en esta PC.
